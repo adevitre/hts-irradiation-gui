@@ -1,3 +1,8 @@
+'''
+    A library to load, plot and fit Critical Current (Ic) and Critical Temperature (Tc) of REBCO coated conductors.
+    @author Alexis Devitre (devitre@mit.edu)
+'''
+
 import numpy as np
 import matplotlib.pyplot as plt
 import platform
