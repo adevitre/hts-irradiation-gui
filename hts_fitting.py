@@ -20,43 +20,49 @@ plt.rcParams['figure.figsize'] = 8, 8
 # General Utility Functions
 #
 def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=5e-6, iMin=0, vb=False):
-    if vb: print('\n\n'+fpath+'\n')
-        
-    if fformat == 'mit':
-        current, voltage, tHTS, tTAR = np.genfromtxt(fpath, usecols=[2, 3, 4, 5], unpack=True)
-    elif fformat == 'tuv':
-        current, voltage = np.genfromtxt(fpath, usecols=[0, 1], skip_footer=2, delimiter=' ', unpack=True)
-        if platform.system() == "Windows":
-            sep = '\\'
+    
+    try:
+        if vb: print('\n\n'+fpath+'\n')
+
+        if fformat == 'mit':
+            current, voltage, tHTS, tTAR = np.genfromtxt(fpath, usecols=[2, 3, 4, 5], unpack=True)
+        elif fformat == 'tuv':
+            current, voltage = np.genfromtxt(fpath, usecols=[0, 1], skip_footer=2, delimiter=' ', unpack=True)
+            if platform.system() == "Windows":
+                sep = '\\'
+            else:
+                sep = '/'
+            temperature = float(fpath.split(sep)[-1].split('_')[1])
+
+        # Invert the voltage if current was run in reverse direction
+        if voltage[np.argmax(np.abs(voltage))] < 0:
+            voltage *= -1
+            if vb: print('Voltage was negative, array multiplied by -1')
+
+        # filter points above the voltage threshold, where the power law is a good fit
+        stable = (voltage < maxV)
+
+        if logIV:
+            # This assumes that there are at least 3 points before the exponential rise.
+            # it was added to deal with a case where there is a large negative offset that 
+            # eliminates most points when filtering the logvoltage
+            voltage -= np.nanmean(voltage[:3])
+            current, voltage = np.log(current), np.log(voltage)
+            inRange = np.ones(len(current), dtype=bool)
         else:
-            sep = '/'
-        temperature = float(fpath.split(sep)[-1].split('_')[1])
-    
-    # Invert the voltage if current was run in reverse direction
-    if voltage[np.argmax(np.abs(voltage))] < 0:
-        voltage *= -1
-        if vb: print('Voltage was negative, array multiplied by -1')
-    
-    # filter points above the voltage threshold, where the power law is a good fit
-    stable = (voltage < maxV)
-    
-    if logIV:
-        # This assumes that there are at least 3 points before the exponential rise.
-        # it was added to deal with a case where there is a large negative offset that 
-        # eliminates most points when filtering the logvoltage
-        voltage -= np.nanmean(voltage[:3])
-        current, voltage = np.log(current), np.log(voltage)
-        if iMin > 0:
-            iMin = np.log(iMin)
-        
-    # filter points where current | voltage is NaN
-    finite = (np.isfinite(current) & np.isfinite(voltage))
-    inRange = (current >= iMin)
-    cut = finite & stable & inRange
-    current, voltage = current[cut], voltage[cut]
-    
-    if fformat == 'mit':
-        temperature = [tHTS[cut], tTAR[cut]]
+            inRange = (current >= iMin)
+
+        # filter points where current | voltage is NaN
+        finite = (np.isfinite(current) & np.isfinite(voltage))
+
+        cut = finite & stable & inRange
+        current, voltage = current[cut], voltage[cut]
+
+        if fformat == 'mit':
+            temperature = [tHTS[cut], tTAR[cut]]
+            
+    except Exception as e:
+        print('readIV raised: ', e)
         
     return current, voltage, temperature
 
@@ -128,12 +134,12 @@ def fitIV(current, voltage, vc=.2e-6, function='powerLaw', p0=[], noiseLevel=1e-
     
     if function == 'powerLaw':
         if p0 is []: p0 = [0.95*np.nanmax(current), 25.]
-        popt, pcov = curve_fit(lambda i, ic, n: powerLaw(i, ic, n), current, voltage, p0=p0)
+        popt, pcov = curve_fit(lambda i, ic, n: powerLaw(i, ic, n), current, voltage, p0=p0, sigma=np.ones_like(current)*noiseLevel, absolute_sigma=True)
         residuals = voltage - powerLaw(current, *popt)
     else:
         valid = (np.log(vc) <= voltage)
         current, voltage = current[valid], voltage[valid]
-        popt, pcov = curve_fit(linear, current, voltage)
+        popt, pcov = curve_fit(linear, current, voltage, sigma=np.ones_like(current)*noiseLevel, absolute_sigma=True)
         residuals = voltage - linear(current, *popt)
         noiseLevel = np.log(noiseLevel)
         
@@ -167,10 +173,9 @@ def fitIcMeasurement(fpath, fformat='mit', vc=.2e-6, function='powerLaw', vThres
     
     if vb: print('\n\n'+fpath+'\n')
         
-    ic, n, chisq, current, voltage = np.nan, np.nan, np.nan, [], []
+    ic, n, chisq, current, voltage, pcov = np.nan, np.nan, np.nan, [], [], [[np.nan, np.nan], [np.nan, np.nan]]
     
     try:
-        
         current, voltage, temperature = readIV(fpath, fformat=fformat, logIV=False, maxV=vMax, iMin=iMin)
         logcurrent, logvoltage, _ = readIV(fpath, fformat=fformat, logIV=True, maxV=vMax, iMin=iMin)
         
@@ -201,6 +206,7 @@ def fitIcMeasurement(fpath, fformat='mit', vc=.2e-6, function='powerLaw', vThres
         if function == 'powerLaw':
             popt, pcov, chisq = fitIV(current, voltage, vc=vc, function='powerLaw', p0=[ic, n], vb=vb)
             ic, n = popt[0], popt[1]
+            
         elif function == 'linear':
             popt, pcov, chisq = fitIV(logcurrent, logvoltage, vc=vc, function='linear', vb=vb)
             n, ic = popt[0], vc**(1./popt[0]) / np.exp(popt[1]/popt[0])
@@ -211,7 +217,7 @@ def fitIcMeasurement(fpath, fformat='mit', vc=.2e-6, function='powerLaw', vThres
     except Exception as e: # Usually TypeError, IndexError
         if vb: print('fittingFuntions:fitIV returned: ', e)
     
-    return ic, n, current, voltage, chisq
+    return ic, n, current, voltage, chisq, pcov
     
     
 def removeBackground(current, voltage, ic, n, noiseThreshold, vc):
