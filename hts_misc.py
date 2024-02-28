@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def renameFiles(directory):
     for f in [f for f in os.listdir(directory) if 'anneal270-12h' in f]:
@@ -29,3 +30,6 @@ def moving_average(x, w):
 def timestamp_to_seconds(timestamp):
     hh, mm, ss = timestamp[11:].split('-')
     return float(hh)*3600+float(mm)*60+float(ss)/1e6
+    
+    
+    

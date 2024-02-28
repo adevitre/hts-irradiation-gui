@@ -3,14 +3,33 @@ import matplotlib.pyplot as plt
 from scipy import integrate, constants
 MAX_BEAM_CURRENT = 300 # nA
 
-'''
+def getMeasurementStartTime(fpaths, year='2024'):
+    """
+    getMeasurementStartTime returns the 
+
+    Parameters:
+    fpaths (str, array): paths to files with Ic/Tc measurement data (1st column must have format YYYY-MM-DD_HH:MM:SS.SSSSSS)
+    year (str): This is to correct the year if needed, due to a bug that existed in our DATAQ.
+
+    Returns:
+    starttimes (datetime, array): Containing the datetime of the first point measured.
+    """
+    starttimes = []
+    for path in fpaths:
+        df = pd.read_csv(path, usecols=[0], names=['date'], dtype={'date': 'str'}, delim_whitespace=True, skiprows=2)
+        startdate = year+df['date'][0][4:]
+        starttimes.append(pd.to_datetime('-'.join(startdate.split('_'))))
+    return starttimes
+
+def loadBeamCurrent(fpath, sname):
+    """
     loadBeamCurrent reads an excel sheet containing the beam current.
     INPUTS
     path (str) - absolute path to excel spreadsheet
     sname (str) - sheet name where columns 2 is relative time and column 3 is beam current in nA
-'''
-def loadBeamCurrent(fpath, sname):
-    data = pd.read_excel(io=fpath, sheet_name=sname, usecols=[1, 2], names=['time_s', 'ibeam_nA'])
+    """
+    data = pd.read_excel(io=fpath, sheet_name=sname, usecols=[0, 1, 2], names=['time_datetime', 'time_s', 'ibeam_nA'])
+    data['time_datetime'] = pd.to_datetime(data['time_datetime'])
     data['ibeam_nA'] *= 1e9
     return data
 
@@ -22,11 +41,22 @@ def plotBeamCurrent(data, fig=None, color='k'):
     ax.plot(data.time_s, data.ibeam_nA, color=color, marker='+')
     ax.set_xlim(data.time_s.min(), data.time_s.max())
     ax.set_ylim(0, data.ibeam_nA.max())
-    ax.set_xlabel('Time [s]')
+    ax.set_xlabel('Relative Time [s]')
     ax.set_ylabel('Beam Current [nA]')
+    axdt = ax.twiny()
+    axdt.plot(data.time_datetime, data.ibeam_nA, color=color, marker='+')
+    axdt.set_xlim(data.time_datetime.min(), data.time_datetime.max())
+    axdt.set_xlabel('Absolute Time [s]')
     fig.tight_layout()
-    return fig, ax
+    return fig, ax, axdt
 
+def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname):
+    data = loadBeamCurrent(ibpath, sname=sname)
+    fig, ax, axdt = plotBeamCurrent(data)
+    for t in getMeasurementStartTime(fpaths, year='2024'):
+        print(t)
+        axdt.axvline(t, color='b', linestyle=':')
+   
 def read_beamCurrent(fname_tape='beam/tape.txt', fname_collimator='beam/collimator.txt', vb=False):
     tt, it = np.genfromtxt(fname_tape, delimiter=',', unpack=True, usecols=[1,2])
     
