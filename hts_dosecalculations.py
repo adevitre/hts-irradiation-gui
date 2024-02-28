@@ -44,7 +44,7 @@ def plotBeamCurrent(data, fig=None, color='k'):
     ax.set_xlabel('Relative Time [s]')
     ax.set_ylabel('Beam Current [nA]')
     axdt = ax.twiny()
-    axdt.plot(data.time_datetime, data.ibeam_nA, color=color, marker='+')
+    axdt.plot(data.time_datetime, data.ibeam_nA, linestyle='None')
     axdt.set_xlim(data.time_datetime.min(), data.time_datetime.max())
     axdt.set_xlabel('Absolute Time [s]')
     fig.tight_layout()
@@ -54,7 +54,6 @@ def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname):
     data = loadBeamCurrent(ibpath, sname=sname)
     fig, ax, axdt = plotBeamCurrent(data)
     for t in getMeasurementStartTime(fpaths, year='2024'):
-        print(t)
         axdt.axvline(t, color='b', linestyle=':')
    
 def read_beamCurrent(fname_tape='beam/tape.txt', fname_collimator='beam/collimator.txt', vb=False):
