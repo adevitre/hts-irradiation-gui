@@ -12,8 +12,6 @@ import pandas as pd
 from scipy import integrate, constants
 from scipy.optimize import curve_fit
 
-# Sets up the default plotting parameters
-
 plt.rcParams['axes.labelsize'] = 20
 plt.rcParams['xtick.labelsize'] = 14
 plt.rcParams['ytick.labelsize'] = 14
@@ -21,10 +19,15 @@ plt.rcParams['legend.fontsize'] = 12
 plt.rcParams['lines.markersize'] = 8
 plt.rcParams['figure.figsize'] = 8, 8
 
-#
-# General Utility Functions
-#
-def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=5e-6, iMin=0, vb=False):
+
+########################################################################################
+########################################################################################
+######################## LOADING DATA FROM IV & TV MEASUREMENTS ########################
+########################################################################################
+########################################################################################
+
+
+def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False):
     
     try:
         if vb: print('\n\n'+fpath+'\n')
@@ -76,6 +79,22 @@ def readTV(fname, fformat='mit'):
     return time, voltage, sampleT, targetT
 
 
+########################################################################################
+########################################################################################
+######################## PLOTTING DATA FROM IV & TV MEASUREMENTS #######################
+########################################################################################
+########################################################################################
+
+
+def linear(i, a, b):
+    return a*i+b
+
+def powerLaw(i, ic, n):
+    return 2e-7*(i/ic)**n
+
+def inverseExponential(temperature, a, b, t50):
+    return a*temperature*(1-1/(np.exp(b*(temperature-t50))+1))
+
 def plotFit(x, function, popt, fig=None, alpha=.5, linewidth=5, **kwargs):
     if fig is None:
         fig, ax = plt.subplots(figsize=(8, 5))
@@ -118,22 +137,14 @@ def plotIVs(fnames, fformat='mit', fig=None, outpath=None):
     if outpath is not None:
         plt.savefig(outpath, format='png', transparent=False)
 
-#
-# Fitting Functions
-#
-def linear(i, a, b):
-    return a*i+b
 
-def powerLaw(i, ic, n):
-    return 2e-7*(i/ic)**n
-
-def inverseExponential(temperature, a, b, t50):
-    return a*temperature*(1-1/(np.exp(b*(temperature-t50))+1))
+########################################################################################
+########################################################################################
+######################## LOADING DATA FROM IV & TV MEASUREMENTS ########################
+########################################################################################
+########################################################################################
 
 
-#
-# Fitting Routines
-#
 def fitIV(current, voltage, vc=.2e-6, function='powerLaw', p0=[], noiseLevel=1e-7, vb=False):
     popt, pcov, chisq = np.nan, np.nan, np.nan
     
@@ -159,23 +170,22 @@ def fitIV(current, voltage, vc=.2e-6, function='powerLaw', p0=[], noiseLevel=1e-
     return popt, pcov, chisq
 
 
-'''
-    fitIcMeasurement fits the IV data to a 2-parameter power law
-
-    INPUTS
-    ----------------------------------------------------------
-    fpath (str)           - Path to file containing IV curve
-    vc (float)            - Critical voltage as defined from Ec = 1 uV/cm. Typically 0.2 uV.
-    function (str)        - Fitting function (powerLaw | linear on loglog scale)
-    vThreshold (float)    - threshold use for background removal. Use voltage noise level ~ +/-.1 uV.
-
-    RETURNS
-    ----------------------------------------------------------
-    ic - Fitted value of the critical current
-    n  - Fitted value of the exponent
-'''
 def fitIcMeasurement(fpath, fformat='mit', vc=.2e-6, function='powerLaw', vThreshold=1e-7, iMin=0, vMax=20e-6, vb=False):
-    
+    """
+        fitIcMeasurement fits the IV data to a 2-parameter power law
+
+        INPUTS
+        ----------------------------------------------------------
+        fpath (str)           - Path to file containing IV curve
+        vc (float)            - Critical voltage as defined from Ec = 1 uV/cm. Typically 0.2 uV.
+        function (str)        - Fitting function (powerLaw | linear on loglog scale)
+        vThreshold (float)    - threshold use for background removal. Use voltage noise level ~ +/-.1 uV.
+
+        RETURNS
+        ----------------------------------------------------------
+        ic - Fitted value of the critical current
+        n  - Fitted value of the exponent
+    """
     if vb: print('\n\n'+fpath+'\n')
         
     ic, n, chisq, current, voltage, pcov = np.nan, np.nan, np.nan, [], [], [[np.nan, np.nan], [np.nan, np.nan]]
@@ -240,9 +250,6 @@ def removeBackground(current, voltage, ic, n, noiseThreshold, vc):
     return voltage - background
 
 
-
-
-
 def fitTc(temperature, voltage, time, bounds=(80, 90), ax=None, label='', filter_strength=(1.2*1e6, 11)):
     # slice the temperature range
     cut = (bounds[0] <= temperature)&(temperature <= bounds[1])
@@ -286,6 +293,7 @@ def fitTc(temperature, voltage, time, bounds=(80, 90), ax=None, label='', filter
         ax[2].legend(loc='upper right')
         
     return t50, tore
+
 
 def fitTV(temperature, voltage):
     '''

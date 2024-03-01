@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 from scipy import integrate, constants
 MAX_BEAM_CURRENT = 300 # nA
 
@@ -53,7 +54,7 @@ def plotBeamCurrent(data, fig=None, color='k'):
 def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname):
     data = loadBeamCurrent(ibpath, sname=sname)
     fig, ax, axdt = plotBeamCurrent(data)
-    for t in getMeasurementStartTime(fpaths, year='2024'):
+    for i, t in enumerate(getMeasurementStartTime(fpaths, year='2024')):
         axdt.axvline(t, color='b', linestyle=':')
    
 def read_beamCurrent(fname_tape='beam/tape.txt', fname_collimator='beam/collimator.txt', vb=False):
