@@ -56,6 +56,7 @@ def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname):
     fig, ax, axdt = plotBeamCurrent(data)
     for i, t in enumerate(getMeasurementStartTime(fpaths, year='2024')):
         axdt.axvline(t, color='b', linestyle=':')
+    return fig, ax, axdt
    
 def read_beamCurrent(fname_tape='beam/tape.txt', fname_collimator='beam/collimator.txt', vb=False):
     tt, it = np.genfromtxt(fname_tape, delimiter=',', unpack=True, usecols=[1,2])
