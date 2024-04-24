@@ -12,7 +12,7 @@ def renameFiles(directory):
         
         #print(directory+f, directory+newfname)
         os.rename(directory+f, directory+newfname)
-
+        
 def binAverage(xbins, xdata, ydata):
     yavgs, ystds, yfiltered, xfiltered = [], [], np.array([]), np.array([])
     for (minb, maxb) in zip(xbins[:-1], xbins[1:]):

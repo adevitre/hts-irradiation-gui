@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from scipy import integrate, constants
@@ -36,31 +37,35 @@ def loadBeamCurrent(fpath, sname):
 
 def plotBeamCurrent(data, fig=None, color='k'):
     if fig is None:
-        fig, ax = plt.subplots()
+        fig, axdt = plt.subplots()
     else:
-        ax = fig.gca()
-    ax.plot(data.time_s, data.ibeam_nA, color=color, marker='+')
-    ax.set_xlim(data.time_s.min(), data.time_s.max())
-    ax.set_ylim(0, data.ibeam_nA.max())
-    ax.set_xlabel('Relative Time [s]')
-    ax.set_ylabel('Beam Current [nA]')
-    axdt = ax.twiny()
+        axdt = fig.gca()
+    
     axdt.plot(data.time_datetime, data.ibeam_nA, linestyle='None')
     axdt.set_xlim(data.time_datetime.min(), data.time_datetime.max())
     axdt.set_xlabel('Absolute Time [s]')
+    
+    axrt = axdt.twiny()
+    
+    axrt.plot(data.time_s, data.ibeam_nA, color=color, marker='+')
+    axrt.set_xlim(data.time_s.min(), data.time_s.max())
+    axrt.set_ylim(0, data.ibeam_nA.max())
+    axrt.set_xlabel('Relative Time [s]')
+    axrt.set_ylabel('Beam Current [nA]')
+    
     fig.tight_layout()
-    return fig, ax, axdt
+    return fig, axrt, axdt
 
-def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname):
+def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname, fig=None):
     data = loadBeamCurrent(ibpath, sname=sname)
-    fig, ax, axdt = plotBeamCurrent(data)
+    if fig is None: fig, ax = plt.subplots()
+    fig, axrt, axdt = plotBeamCurrent(data, fig=fig)
     for i, t in enumerate(getMeasurementStartTime(fpaths, year='2024')):
         axdt.axvline(t, color='b', linestyle=':')
-    return fig, ax, axdt
+    return fig, axrt, axdt
    
 def read_beamCurrent(fname_tape='beam/tape.txt', fname_collimator='beam/collimator.txt', vb=False):
     tt, it = np.genfromtxt(fname_tape, delimiter=',', unpack=True, usecols=[1,2])
-    
     if vb:
         fig, ax = plt.subplots(figsize=(9, 4))
         ax.tick_params(axis='both', labelsize=18)
@@ -70,11 +75,10 @@ def read_beamCurrent(fname_tape='beam/tape.txt', fname_collimator='beam/collimat
         ax.set_xlim(np.nanmin(np.append(tt, tc)), np.nanmax(np.append(tt, tc)))
         ax.set_ylim(np.nanmin(np.append(it, ic))*1e9, MAX_BEAM_CURRENT)
         ax.legend(fancybox=True, loc='upper left', fontsize=16)
-        
     return tt, it
 
-def compute_fluence(time, current, d=0.003):
-    return integrate.trapz(i/(np.pi*(d/2.)**2), t)/constants.elementary_charge
+def compute_fluence(time, current, d=0.003175):
+    return integrate.trapz(current*1e-9/(np.pi*(d/2.)**2), time)/constants.elementary_charge
 
 def compute_fluences(path_to_folder='', fname_tape='tape.txt', limits=[], offset=0, xymax=(0, 0), vb=True, window=None):
     

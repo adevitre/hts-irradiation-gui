@@ -2,18 +2,17 @@
     A library to load, plot and fit Critical Current (Ic) and Critical Temperature (Tc) of REBCO coated conductors.
     @author Alexis Devitre (devitre@mit.edu)
 '''
-
+import hts_misc
 import numpy as np
 import matplotlib.pyplot as plt
 import platform
 import seaborn as sns
 import pandas as pd
-
 from scipy import integrate, constants
 from scipy.optimize import curve_fit
-
 import ipywidgets as widgets
 
+plt.rcParams['axes.titlesize'] = 20
 plt.rcParams['axes.labelsize'] = 20
 plt.rcParams['xtick.labelsize'] = 14
 plt.rcParams['ytick.labelsize'] = 14
@@ -30,7 +29,6 @@ plt.rcParams['figure.figsize'] = 8, 8
 
 
 def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False):
-    
     try:
         if vb: print('\n\n'+fpath+'\n')
 
@@ -83,7 +81,7 @@ def aggregateIVs(fpaths):
         current, voltage = np.append(current, i), np.append(voltage, v)
     return current, voltage
 
-def showcaseIVs(fpaths):
+def showcaseIVs(fpaths, style='loglog'):
     fig, ax = plt.subplots(figsize=(9, 4))
     
     def on_spinbox_value_change(change, ax):
@@ -92,15 +90,25 @@ def showcaseIVs(fpaths):
             f = fpaths[spinbox.value]
             ax.set_title(f.split('/')[-1])
             i, v, temperature = readIV(f)
-            ic, n, current, voltage, chisq, pcov = fitIcMeasurement(f, function='linear')
-            ax.semilogy(i, 1e6*v, color='lightgray', marker='+', label='raw data')
-            ax.semilogy(current, 1e6*voltage, color='k', marker='+', label='corrected voltage')
-            xsmooth = np.linspace(np.min(current), np.max(current), 10000)
-            cut = voltage > .2e-6
-            ax.semilogy(current[cut], 1e6*voltage[cut], color='b', marker='+')
-            ax.semilogy(xsmooth, 1e6*powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label='powerLaw fit')
+            if style == 'loglog':
+                ic, n, current, voltage, chisq, pcov = fitIcMeasurement(f, function='linear')
+                ax.semilogy(i, 1e6*v, color='lightgray', marker='+', label='raw data')
+                ax.semilogy(current, 1e6*voltage, color='k', marker='+', label='corrected voltage')
+                xsmooth = np.linspace(np.min(current), np.max(current), 10000)
+                cut = voltage > .2e-6
+                ax.semilogy(current[cut], 1e6*voltage[cut], color='b', marker='+')
+                ax.semilogy(xsmooth, 1e6*powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label='powerLaw fit')
+                ax.set_ylim(1e-2, 1e2)
+            else:
+                ic, n, current, voltage, chisq, pcov = fitIcMeasurement(f, function='powerLaw')
+                ax.plot(i, 1e6*v, color='lightgray', marker='+', label='raw data')
+                ax.plot(current, 1e6*voltage, color='k', marker='+', label='corrected voltage')
+                xsmooth = np.linspace(np.min(current), np.max(current), 10000)
+                ax.plot(current, 1e6*voltage, color='b', marker='+')
+                ax.plot(xsmooth, 1e6*powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label='powerLaw fit')
+                ax.set_ylim(-.5, 3)
+            ax.axhline(0.2)
             ax.legend()
-            ax.set_ylim(1e-2, 1e2)
         except Exception as e:
             print(e)
     spinbox = widgets.IntText(description="IV#:", min=0, max=len(fpaths), value=1)
@@ -108,10 +116,42 @@ def showcaseIVs(fpaths):
     display(spinbox)
     spinbox.value = 0
     
-def readTV(fname, fformat='mit'):
+    
+def readTV_old(fname, fformat='mit', vb=False):
     time, voltage, sampleT, targetT = np.genfromtxt(fname, usecols=[1, 3, 4, 5], unpack=True)
+    # Invert the voltage if current was run in reverse direction
+    if voltage[np.argmax(np.abs(voltage))] < 0:
+        voltage *= -1
+        if vb: print('Voltage was negative, array multiplied by -1')
+
     return time, voltage, sampleT, targetT
 
+def readTV(fpath, fformat='mit', vb=False):
+    data = pd.read_csv(fpath, usecols=[1, 3, 4, 5], skiprows=2, delim_whitespace=True, names=['time', 'voltage', 'sampleT', 'targetT'])
+    if data.voltage[data.voltage.abs().argmax()] < 0:
+        if vb: print('Sample has been reverse biased: Voltage multiplied by -1')
+        data['voltage'] *= -1
+    return data
+    
+def showcaseTVs(fpaths):
+    fig, ax = plt.subplots(figsize=(9, 4))
+    def on_spinbox_value_change(change, ax):
+        try:
+            ax.clear()
+            f = fpaths[spinbox.value]
+            ax.set_title(f.split('/')[-1])
+            time, voltage, sampleT, targetT = readTV(f)
+            ax.plot(sampleT, 1e6*voltage, color='k', marker='+', label='raw data')
+            ax.axhline(0.2)
+            ax.legend()
+            ax.set_xlim(60, 90)
+            ax.set_ylim(-1, 5)
+        except Exception as e:
+            print(e)
+    spinbox = widgets.IntText(description="TV#:", min=0, max=len(fpaths), value=1)
+    spinbox.observe(lambda change: on_spinbox_value_change(change, ax), names='value')
+    display(spinbox)
+    spinbox.value = 0
 
 ########################################################################################
 ########################################################################################
@@ -128,9 +168,9 @@ def linear(i, a, b):
 def powerLaw(i, ic, n):
     return 2e-7*(i/ic)**n
 
-def inverseExponential(temperature, a, b, t50):
-    return a*temperature*(1-1/(np.exp(b*(temperature-t50))+1))
-
+def inverseExponential(temperature, a, b, c, t50):
+    #return a*temperature*(1-1/(np.exp(b*(temperature-t50))+1))
+    return a*temperature-c/(np.exp(b*(temperature-t50))+1)
 
 def plotFit(x, function, popt, fig=None, alpha=.5, linewidth=5, **kwargs):
     if fig is None:
@@ -309,7 +349,7 @@ def removeBackground(current, voltage, ic, n, noiseThreshold, vc):
 
 def fitTc(temperature, voltage, time, bounds=(80, 90), ax=None, label='', filter_strength=(1.2*1e6, 11)):
     # slice the temperature range
-    cut = (bounds[0] <= temperature)&(temperature <= bounds[1])
+    cut = (bounds[0] <= temperature) & (temperature <= bounds[1])
     temp = temperature
     temperature, voltage, time = np.sort(temperature)[cut], 1e6*np.array([x for _, x in sorted(zip(temp, voltage))])[cut], np.array([x for _, x in sorted(zip(temp, time))])[cut]
     
@@ -398,3 +438,22 @@ def fitTV(temperature, voltage):
         Tore, T50, Tosc, popt = np.nan, np.nan, np.nan, [np.nan, np.nan, np.nan]
         
     return Tore, T50, Tosc, popt
+
+
+########################################################################################
+########################################################################################
+######################## PLOTTING SPECIFIC DATASETS ####################################
+########################################################################################
+########################################################################################
+
+def plotIcT(fpaths):
+    fig, ax = plt.subplots()
+    
+    ics, temperatures = [], []
+    for fpath in fpaths:
+        current, voltage, temperature = readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False)
+        popt, pcov, chisq = fitIV(current, voltage)
+        ics.append(popt[0])
+        temperatures.append(np.mean(temperature[:-10]))
+        
+    ax.plot(temperatures, ics)
