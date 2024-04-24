@@ -81,7 +81,7 @@ def aggregateIVs(fpaths):
         current, voltage = np.append(current, i), np.append(voltage, v)
     return current, voltage
 
-def showcaseIVs(fpaths, style='loglog'):
+def showcaseIVs(fpaths, style='loglog', vMax=20e-6):
     fig, ax = plt.subplots(figsize=(9, 4))
     
     def on_spinbox_value_change(change, ax):
@@ -91,7 +91,7 @@ def showcaseIVs(fpaths, style='loglog'):
             ax.set_title(f.split('/')[-1])
             i, v, temperature = readIV(f)
             if style == 'loglog':
-                ic, n, current, voltage, chisq, pcov = fitIcMeasurement(f, function='linear')
+                ic, n, current, voltage, chisq, pcov = fitIcMeasurement(f, function='linear', vMax=vMax)
                 ax.semilogy(i, 1e6*v, color='lightgray', marker='+', label='raw data')
                 ax.semilogy(current, 1e6*voltage, color='k', marker='+', label='corrected voltage')
                 xsmooth = np.linspace(np.min(current), np.max(current), 10000)
@@ -100,7 +100,7 @@ def showcaseIVs(fpaths, style='loglog'):
                 ax.semilogy(xsmooth, 1e6*powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label='powerLaw fit')
                 ax.set_ylim(1e-2, 1e2)
             else:
-                ic, n, current, voltage, chisq, pcov = fitIcMeasurement(f, function='powerLaw')
+                ic, n, current, voltage, chisq, pcov = fitIcMeasurement(f, function='powerLaw', vMax=vMax)
                 ax.plot(i, 1e6*v, color='lightgray', marker='+', label='raw data')
                 ax.plot(current, 1e6*voltage, color='k', marker='+', label='corrected voltage')
                 xsmooth = np.linspace(np.min(current), np.max(current), 10000)
