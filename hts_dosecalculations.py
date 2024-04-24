@@ -31,7 +31,11 @@ def loadBeamCurrent(fpath, sname):
     sname (str) - sheet name where columns 2 is relative time and column 3 is beam current in nA
     """
     data = pd.read_excel(io=fpath, sheet_name=sname, usecols=[0, 1, 2], names=['time_datetime', 'time_s', 'ibeam_nA'])
-    data['time_datetime'] = pd.to_datetime(data['time_datetime'])
+    try:
+        data['time_datetime'] = pd.to_datetime(data['time_datetime'])
+    except Exception as e:
+        print('dose::loadBeamCurrent raised: ', e)
+        
     data['ibeam_nA'] *= 1e9
     return data
 
@@ -63,19 +67,6 @@ def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname, fig=None):
     for i, t in enumerate(getMeasurementStartTime(fpaths, year='2024')):
         axdt.axvline(t, color='b', linestyle=':')
     return fig, axrt, axdt
-   
-def read_beamCurrent(fname_tape='beam/tape.txt', fname_collimator='beam/collimator.txt', vb=False):
-    tt, it = np.genfromtxt(fname_tape, delimiter=',', unpack=True, usecols=[1,2])
-    if vb:
-        fig, ax = plt.subplots(figsize=(9, 4))
-        ax.tick_params(axis='both', labelsize=18)
-        ax.set_xlabel('Time [min]', fontsize=18)
-        ax.set_ylabel('Beam current [nA]', fontsize=18)
-        ax.plot(tt, it*1e9, color='b', label='Beam current on sample')
-        ax.set_xlim(np.nanmin(np.append(tt, tc)), np.nanmax(np.append(tt, tc)))
-        ax.set_ylim(np.nanmin(np.append(it, ic))*1e9, MAX_BEAM_CURRENT)
-        ax.legend(fancybox=True, loc='upper left', fontsize=16)
-    return tt, it
 
 def compute_fluence(time, current, d=0.003175):
     return integrate.trapz(current*1e-9/(np.pi*(d/2.)**2), time)/constants.elementary_charge
