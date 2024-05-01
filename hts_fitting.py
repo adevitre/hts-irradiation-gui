@@ -446,14 +446,27 @@ def fitTV(temperature, voltage):
 ########################################################################################
 ########################################################################################
 
-def plotIcT(fpaths):
-    fig, ax = plt.subplots()
+def getIcT(fpaths, fig=None, vb=False):
+    if vb:
+        if fig is None:
+            fig, ax = plt.subplots()
+        else:
+            ax = fig.axes
+    else:
+        ax = None
     
     ics, temperatures = [], []
     for fpath in fpaths:
-        current, voltage, temperature = readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False)
-        popt, pcov, chisq = fitIV(current, voltage)
-        ics.append(popt[0])
-        temperatures.append(np.mean(temperature[:-10]))
-        
-    ax.plot(temperatures, ics)
+        try:
+            current, voltage, temperature = readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False)
+            popt, pcov, chisq = fitIV(current, voltage)
+            ics.append(popt[0])
+            temperatures.append(np.mean(temperature[-10:]))
+        except Exception as e:
+            print(fpath, e)
+    if vb: 
+        ax.plot(temperatures, ics, marker='+', linestyle='None')
+        ax.set_xlabel('Temperature [K]')
+        ax.set_ylabel('Critical current [A]')
+    
+    return fig, ax, ics, temperatures
