@@ -29,6 +29,7 @@ plt.rcParams['figure.figsize'] = 8, 8
 
 
 def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False):
+    current, voltage = [], []
     try:
         if vb: print('\n\n'+fpath+'\n')
 
@@ -88,7 +89,6 @@ def showcaseIVs(fpaths, style='loglog', vMax=20e-6):
         try:
             ax.clear()
             f = fpaths[spinbox.value]
-            ax.set_title(f.split('/')[-1])
             i, v, temperature = readIV(f)
             if style == 'loglog':
                 ic, n, current, voltage, chisq, pcov = fitIcMeasurement(f, function='linear', vMax=vMax)
@@ -109,22 +109,13 @@ def showcaseIVs(fpaths, style='loglog', vMax=20e-6):
                 ax.set_ylim(-.5, 3)
             ax.axhline(0.2)
             ax.legend()
+            ax.set_title(f.split('/')[-1], fontsize=12)
         except Exception as e:
             print(e)
     spinbox = widgets.IntText(description="IV#:", min=0, max=len(fpaths), value=1)
     spinbox.observe(lambda change: on_spinbox_value_change(change, ax), names='value')
     display(spinbox)
     spinbox.value = 0
-    
-    
-def readTV_old(fname, fformat='mit', vb=False):
-    time, voltage, sampleT, targetT = np.genfromtxt(fname, usecols=[1, 3, 4, 5], unpack=True)
-    # Invert the voltage if current was run in reverse direction
-    if voltage[np.argmax(np.abs(voltage))] < 0:
-        voltage *= -1
-        if vb: print('Voltage was negative, array multiplied by -1')
-
-    return time, voltage, sampleT, targetT
 
 def readTV(fpath, fformat='mit', vb=False):
     data = pd.read_csv(fpath, usecols=[1, 3, 4, 5], skiprows=2, delim_whitespace=True, names=['time', 'voltage', 'sampleT', 'targetT'])
@@ -159,11 +150,17 @@ def showcaseTVs(fpaths):
 ########################################################################################
 ########################################################################################
 
-def proportional(x, a):
+def affine(x, a):
     return a*x
 
 def linear(i, a, b):
     return a*i+b
+
+def poly3(x, a, b, c):
+    return a*x**2+b*x+c
+
+def poly4(x, a, b, c, d):
+    return a*x**3+b*x**2+c*x+d
 
 def powerLaw(i, ic, n):
     return 2e-7*(i/ic)**n
@@ -171,6 +168,9 @@ def powerLaw(i, ic, n):
 def inverseExponential(temperature, a, b, c, t50):
     #return a*temperature*(1-1/(np.exp(b*(temperature-t50))+1))
     return a*temperature-c/(np.exp(b*(temperature-t50))+1)
+
+def gaussian(x, a0, mu, sigma):
+    return a0*np.exp(-.5*((x - mu)/sigma)**2)/(sigma*np.sqrt(2*np.pi))
 
 def plotFit(x, function, popt, fig=None, alpha=.5, linewidth=5, **kwargs):
     if fig is None:
@@ -347,6 +347,35 @@ def removeBackground(current, voltage, ic, n, noiseThreshold, vc):
     return voltage - background
 '''
 
+def fitTcMeasurement(fpath, wsz=10, vb=False):
+    tc = np.nan
+    data = readTV(fpath)
+    xsmooth = np.linspace(data.sampleT.min(), data.sampleT.max(), 100000)
+    rdata = data.rolling(wsz).mean()
+    vdT = (rdata.voltage.diff()/rdata.sampleT.diff())
+    cut = np.isfinite(vdT).values
+    temperature, vdT = rdata.sampleT[cut], vdT[cut]
+    popt, pcov = curve_fit(gaussian, temperature, vdT, p0=[2, rdata.sampleT[(rdata.voltage-rdata.voltage.max()/2).abs().argmin()], 1])
+    ysmooth = gaussian(xsmooth, *popt)
+    tc = xsmooth[np.argmax(ysmooth)]
+    vtc = rdata.voltage[(rdata.sampleT-tc).abs().argmin()]
+    if vb:
+        fig, ax = plt.subplots(2, 1, figsize=(9, 4), sharex=True)
+        ax[0].plot(rdata.sampleT, 1e6*rdata.voltage, label=wsz, color='k')
+        ax[1].plot(temperature, 1e6*vdT, linestyle='None', marker='+', markersize=2, color='b')
+        ax[1].plot(xsmooth, 1e6*ysmooth, color='k')
+        ax[0].axhline(vtc*1e6, linestyle='--', color='k', alpha=.3)
+        ax[0].axvline(tc, linestyle='--', color='k', alpha=.3)
+        ax[0].set_ylabel('Voltage [uV]')
+        ax[1].set_ylabel('dV/dT [uV/K]')
+        ax[1].set_xlabel('Sample temperature [K]')
+        ax[0].set_ylim(0, 2)
+        ax[1].set_ylim(0, 6)    
+        ax[0].legend()
+        fig.tight_layout()
+    return tc
+    
+    
 def fitTc(temperature, voltage, time, bounds=(80, 90), ax=None, label='', filter_strength=(1.2*1e6, 11)):
     # slice the temperature range
     cut = (bounds[0] <= temperature) & (temperature <= bounds[1])
@@ -446,7 +475,7 @@ def fitTV(temperature, voltage):
 ########################################################################################
 ########################################################################################
 
-def getIcT(fpaths, fig=None, vb=False):
+def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
     if vb:
         if fig is None:
             fig, ax = plt.subplots()
@@ -455,18 +484,29 @@ def getIcT(fpaths, fig=None, vb=False):
     else:
         ax = None
     
-    ics, temperatures = [], []
+    ics, temperatures, popt = [], [], []
+    
     for fpath in fpaths:
         try:
             current, voltage, temperature = readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False)
             popt, pcov, chisq = fitIV(current, voltage)
             ics.append(popt[0])
             temperatures.append(np.mean(temperature[-10:]))
+            
         except Exception as e:
             print(fpath, e)
-    if vb: 
-        ax.plot(temperatures, ics, marker='+', linestyle='None')
-        ax.set_xlabel('Temperature [K]')
-        ax.set_ylabel('Critical current [A]')
+            
+    if vb:
+        if fit:
+            popt, pcov = curve_fit(poly4, temperatures, ics)
+
+            xsmooth = np.linspace(0, 100, 10000)
+            ysmooth = poly4(xsmooth, *popt)
+            ax[0].plot(xsmooth, ysmooth, marker='None', linestyle='-', linewidth=4, alpha=.2, color=color)
+            
+        ax[0].plot(temperatures, ics, marker='+', linestyle='None', label=label, color=color)
+        ax[0].set_xlabel('Temperature [K]')
+        ax[0].set_ylabel('Critical current [A]')
+        ax[0].legend(loc='best')
     
-    return fig, ax, ics, temperatures
+    return fig, ax, ics, temperatures, popt
