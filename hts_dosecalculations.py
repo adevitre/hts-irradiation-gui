@@ -16,12 +16,14 @@ def getMeasurementStartTime(fpaths, year='2024'):
     Returns:
     starttimes (datetime, array): Containing the datetime of the first point measured.
     """
-    starttimes = []
+    starttimes, endtimes = [], []
     for path in fpaths:
         df = pd.read_csv(path, usecols=[0], names=['date'], dtype={'date': 'str'}, delim_whitespace=True, skiprows=2)
-        startdate = year+df['date'][0][4:]
+        startdate = year+df['date'].iloc[0][4:]
+        enddate = year+df['date'].iloc[-1][4:]
         starttimes.append(pd.to_datetime('-'.join(startdate.split('_'))))
-    return starttimes
+        endtimes.append(pd.to_datetime('-'.join(enddate.split('_'))))
+    return starttimes, endtimes
 
 def loadBeamCurrent(fpath, sname):
     """
@@ -46,7 +48,9 @@ def plotBeamCurrent(data, fig=None, color='k'):
         axdt = fig.gca()
     
     axdt.plot(data.time_datetime, data.ibeam_nA, linestyle='None')
-    axdt.set_xlim(data.time_datetime.min(), data.time_datetime.max())
+    lower, upper = data.time_datetime.min(), data.time_datetime.max()
+    print(lower, upper)
+    axdt.set_xlim(lower, upper)
     axdt.set_xlabel('Absolute Time [s]')
     
     axrt = axdt.twiny()
@@ -64,8 +68,10 @@ def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname, fig=None):
     data = loadBeamCurrent(ibpath, sname=sname)
     if fig is None: fig, ax = plt.subplots()
     fig, axrt, axdt = plotBeamCurrent(data, fig=fig)
-    for i, t in enumerate(getMeasurementStartTime(fpaths, year='2024')):
-        axdt.axvline(t, color='b', linestyle=':')
+    starts, ends = getMeasurementStartTime(fpaths, year='2024')
+    for t0, t1 in zip(starts, ends):
+        axdt.axvline(t0, color='b', linestyle=':')
+        axdt.axvspan(t0, t1, color='b', alpha=.1)
     return fig, axrt, axdt
 
 def compute_fluence(time, current, d=0.003175):
