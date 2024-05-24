@@ -1,0 +1,14 @@
+{
+  "QPushButton_acquiring": "QPushButton {color: white; background-color: red; font: bold 20px; padding: 6px; border-radius: 10px; min-width: 30px}",
+  "QPushButton_irradiationModeOn": "QPushButton {color: black; background-color: yellow; font: bold 20px; padding: 6px; border-radius: 10px; min-width: 100px}  QPushButton:hover {color: red}",
+  "QPushButton_idle": "QPushButton {color: white; background-color: blue; font: bold 20px; padding: 6px; border-radius: 10px; min-width: 30px} QPushButton:hover {color: yellow}",
+  "QPushButton_disable": "QPushButton {color: white; background-color: gray; font: bold 20px; padding: 6px; border-radius: 10px; min-width: 30px} QPushButton:hover {color: yellow}",
+  "QPushButton_simulation": "QPushButton {color: white; background-color: black; font: bold 20px; padding: 6px; border-radius: 10px; min-width: 30px} QPushButton:hover {color: yellow}",
+  "QLabel_Gray": "QLabel {background-color: #f0f0f0}",
+  "QPushButton_icon": "QPushButton {color: grey; border-top: 3px transparent; border-bottom: 3px transparent; border-right: 10px transparent; border-left: 10px transparent;}",
+  "QPushButton_warmup1": "QPushButton {color: grey; border-top: 3px transparent; border-bottom: 3px transparent; border-right: 10px transparent; border-left: 10px transparent; background-image: url(\"/home/htsirradiation/Documents/hts-irradiation-gui/images/warmup.png\");} QPushButton:hover {color: grey; border-top: 3px transparent; border-bottom: 3px transparent; border-right: 10px transparent; border-left: 10px transparent; background-image: url(\"/home/htsirradiation/Documents/hts-irradiation-gui/images/warmup-hover.png\"); background-repeat: no-repeat;}",
+  "QPushButton_warmup": "QPushButton {color: grey; border-top: 3px transparent; border-bottom: 3px transparent; border-right: 10px transparent; border-left: 10px transparent; background-image: url(\"/home/htsirradiation/Documents/hts-irradiation-gui/images/warmup-idle.png\"); background-repeat: no-repeat; width: 120px; height: 120px} QPushButton:hover {color: grey; border-top: 3px transparent; border-bottom: 3px transparent; border-right: 10px transparent; border-left: 10px transparent; background-image: url(\"/home/htsirradiation/Documents/hts-irradiation-gui/images/warmup-hover.png\"); background-repeat: no-repeat;}",
+  "QTabWidget": "QTabBar::tab {height: 40 px; width: 180 px; font-size: 12pt;}",
+  "QLabel_Subtitle": "QLabel {font-weight: bold; font-size=14px; color: #ff5733;}"
+}
+
