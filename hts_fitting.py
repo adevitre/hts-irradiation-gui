@@ -3,13 +3,14 @@
     @author Alexis Devitre (devitre@mit.edu)
 '''
 import hts_misc
+import hts_fitfunctions as ff
 import numpy as np
 import matplotlib.pyplot as plt
 import platform
 import seaborn as sns
 import pandas as pd
 from scipy import integrate, constants
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, brentq
 import ipywidgets as widgets
 
 plt.rcParams['axes.titlesize'] = 20
@@ -28,8 +29,28 @@ plt.rcParams['figure.figsize'] = 8, 8
 ########################################################################################
 
 
-def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False):
-    current, voltage = [], []
+def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vThreshold=None, vb=False):
+    '''
+        readIV returns the current, voltage and sample temperature of the input Ic measurement.
+        
+        INPUTS
+        ---------------
+        fpath (str)        - absolute path to a validated Ic measurement
+        fformat (str)      - data file format: options are 'mit' (PSFC) or 'tuv' (AtomInstitut)
+        logIV (bool)       - return log(data), removing NaN and Inf values, as well as values > vc
+        vc (float)         - voltage criterion for Ic calculations and slicing of log(data)
+        maxV (float)       - upper voltage cutoff in volts.
+        iMin (float)       - lower current cutoff, typically used to remove negative values.
+        vThreshold (float) - triggers background removal if different than None.
+        vb (bool).         - toggle printouts for debugging
+        
+        RETURNS
+        ---------------
+        current (array, float)     - array with transport current values in A
+        voltage (array, float)     - array with voltage values in V
+        temperature (array, float) - array with sample temperature values in K 
+    '''
+    current, voltage, temperature = [], [], []
     try:
         if vb: print('\n\n'+fpath+'\n')
 
@@ -47,6 +68,19 @@ def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=Fa
         if voltage[np.argmax(np.abs(voltage))] < 0:
             voltage *= -1
             if vb: print('Voltage was negative, array multiplied by -1')
+        
+        # Optional voltage background removal
+        if vThreshold is not None:
+            logcurrent, logvoltage, _ = readIV(fpath, fformat=fformat, logIV=True, vc=vc, vThreshold=None)
+            # Find an initial estimate for Ic an n using a linear fit in logspace.
+            if vb: print('File read:\n\n', logvoltage, '\n\n', logcurrent)
+            popt, pcov, _ = fitIV(logcurrent, logvoltage, vc=vc, function='linear', vb=vb)
+
+            ic, n = vc**(1./popt[0])/np.exp(popt[1]/popt[0]), popt[0]
+            if vb: print(popt, pcov, '\n\nAfter a first round, ic and n are :', ic, n)
+
+            # Remove the background using a powerLaw fit in linear space and the initial estimates.
+            voltage = correctBackground(current, voltage, ic=ic, n=n, vThreshold=vThreshold)
 
         # filter points above the voltage threshold, where the power law is a good fit
         stable = (voltage < maxV)
@@ -71,20 +105,35 @@ def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=Fa
             temperature = [tHTS[cut], tTAR[cut]]
             
     except Exception as e:
-        print('readIV raised: ', e)
+        if vb: print('readIV raised: ', e)
         
     return current, voltage, temperature
 
 def aggregateIVs(fpaths):
-    current, voltage = np.array([]), np.array([])
+    '''
+        aggregateIVs collects current and voltage data from several Ic measurements in 2 arrays.
+        This routine removes the background by running fitIcMeasurement.
+        
+        INPUTS
+        ---------------
+        fpaths (array, str) - each string is an absolute path to a validated Ic measurement
+        bounds (tuple, float) - (optional) limits for the plot
+        titles (array, str) - Optional title label for each IV
+        
+        RETURNS
+        ---------------
+        current (array, float) - array with transport current values in A
+        voltage (array, float) - array with corresponding voltage values in V
+    '''
+    current, voltage, temperature = np.array([]), np.array([]), np.array([])
     for fpath in fpaths:
         ic, n, i, v, chisq, pcov = fitIcMeasurement(fpath, function='powerLaw', vMax=20e-6, iMin=0, vb=False)
-        current, voltage = np.append(current, i), np.append(voltage, v)
-    return current, voltage
+        _, _, t = readIV(fpath)
+        current, voltage, temperature = np.append(current, i), np.append(voltage, v), np.append(temperature, t)
+    return current, voltage, temperature
 
-def showcaseIVs(fpaths, style='loglog', vMax=20e-6):
+def showcaseIVs(fpaths, style='loglog', vMax=20e-6, bounds=None, titles=None, vb=False):
     fig, ax = plt.subplots(figsize=(9, 4))
-    
     def on_spinbox_value_change(change, ax):
         try:
             ax.clear()
@@ -92,12 +141,12 @@ def showcaseIVs(fpaths, style='loglog', vMax=20e-6):
             i, v, temperature = readIV(f)
             if style == 'loglog':
                 ic, n, current, voltage, chisq, pcov = fitIcMeasurement(f, function='linear', vMax=vMax)
-                ax.semilogy(i, 1e6*v, color='lightgray', marker='+', label='raw data')
-                ax.semilogy(current, 1e6*voltage, color='k', marker='+', label='corrected voltage')
+                ax.loglog(i, 1e6*v, color='lightgray', marker='+', label='raw data')
+                ax.loglog(current, 1e6*voltage, color='k', marker='+', label='corrected voltage')
                 xsmooth = np.linspace(np.min(current), np.max(current), 10000)
                 cut = voltage > .2e-6
-                ax.semilogy(current[cut], 1e6*voltage[cut], color='b', marker='+')
-                ax.semilogy(xsmooth, 1e6*powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label='powerLaw fit')
+                ax.loglog(current[cut], 1e6*voltage[cut], color='b', marker='+')
+                ax.loglog(xsmooth, 1e6*ff.powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label='powerLaw fit')
                 ax.set_ylim(1e-2, 1e2)
             else:
                 ic, n, current, voltage, chisq, pcov = fitIcMeasurement(f, function='powerLaw', vMax=vMax)
@@ -105,40 +154,57 @@ def showcaseIVs(fpaths, style='loglog', vMax=20e-6):
                 ax.plot(current, 1e6*voltage, color='k', marker='+', label='corrected voltage')
                 xsmooth = np.linspace(np.min(current), np.max(current), 10000)
                 ax.plot(current, 1e6*voltage, color='b', marker='+')
-                ax.plot(xsmooth, 1e6*powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label='powerLaw fit')
+                ax.plot(xsmooth, 1e6*ff.powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label='powerLaw fit')
                 ax.set_ylim(-.5, 3)
-            ax.axhline(0.2)
+            xmax = np.ceil(np.max(i)) + (5-np.ceil(np.max(i))%5)
+            ax.set_xlim(0.001, xmax)
+            print(xmax, np.ceil(np.max(i)))
+            ax.axhline(0.2, color='k', linestyle=':', label='$\mathrm{E_c}$ = 1 uV/cm')
             ax.legend()
-            ax.set_title(f.split('/')[-1], fontsize=12)
+            if titles is None:
+                ax.set_title(f.split('/')[-1], fontsize=12)
+            else:
+                ax.set_title(titles[spinbox.value], fontsize=12)
+                
+            ax.set_xlabel('Current [A]')
+            ax.set_ylabel('Voltage [uV]')
+            fig.tight_layout()
+            
+            if bounds is not None:
+                ax.set_xlim(bounds[0], bounds[1])
         except Exception as e:
-            print(e)
+            if vb: print(e)
     spinbox = widgets.IntText(description="IV#:", min=0, max=len(fpaths), value=1)
     spinbox.observe(lambda change: on_spinbox_value_change(change, ax), names='value')
     display(spinbox)
     spinbox.value = 0
 
 def readTV(fpath, fformat='mit', vb=False):
-    data = pd.read_csv(fpath, usecols=[1, 3, 4, 5], skiprows=2, delim_whitespace=True, names=['time', 'voltage', 'sampleT', 'targetT'])
-    if data.voltage[data.voltage.abs().argmax()] < 0:
-        if vb: print('Sample has been reverse biased: Voltage multiplied by -1')
-        data['voltage'] *= -1
+    try:
+        cols, names = [1, 3, 4, 5], ['time', 'voltage', 'sampleT', 'targetT']
+        data = pd.read_csv(fpath, usecols=cols, skiprows=2, delim_whitespace=True, names=names)
+        if data.voltage[data.voltage.abs().argmax()] < 0:
+            if vb: print('Sample has been reverse biased: Voltage multiplied by -1')
+            data['voltage'] *= -1
+    except Exception as e:
+        if vb: print(e)
     return data
     
-def showcaseTVs(fpaths):
+def showcaseTVs(fpaths, vb=False):
     fig, ax = plt.subplots(figsize=(9, 4))
     def on_spinbox_value_change(change, ax):
         try:
             ax.clear()
             f = fpaths[spinbox.value]
             ax.set_title(f.split('/')[-1])
-            time, voltage, sampleT, targetT = readTV(f)
-            ax.plot(sampleT, 1e6*voltage, color='k', marker='+', label='raw data')
+            data = readTV(f)
+            ax.plot(data.sampleT, 1e6*data.voltage, color='k', marker='+', label='raw data')
             ax.axhline(0.2)
             ax.legend()
             ax.set_xlim(60, 90)
             ax.set_ylim(-1, 5)
         except Exception as e:
-            print(e)
+            if vb: print(e)
     spinbox = widgets.IntText(description="TV#:", min=0, max=len(fpaths), value=1)
     spinbox.observe(lambda change: on_spinbox_value_change(change, ax), names='value')
     display(spinbox)
@@ -149,28 +215,6 @@ def showcaseTVs(fpaths):
 ######################## PLOTTING DATA FROM IV & TV MEASUREMENTS #######################
 ########################################################################################
 ########################################################################################
-
-def affine(x, a):
-    return a*x
-
-def linear(i, a, b):
-    return a*i+b
-
-def poly3(x, a, b, c):
-    return a*x**2+b*x+c
-
-def poly4(x, a, b, c, d):
-    return a*x**3+b*x**2+c*x+d
-
-def powerLaw(i, ic, n):
-    return 2e-7*(i/ic)**n
-
-def inverseExponential(temperature, a, b, c, t50):
-    #return a*temperature*(1-1/(np.exp(b*(temperature-t50))+1))
-    return a*temperature-c/(np.exp(b*(temperature-t50))+1)
-
-def gaussian(x, a0, mu, sigma):
-    return a0*np.exp(-.5*((x - mu)/sigma)**2)/(sigma*np.sqrt(2*np.pi))
 
 def plotFit(x, function, popt, fig=None, alpha=.5, linewidth=5, **kwargs):
     if fig is None:
@@ -240,13 +284,13 @@ def fitIV(current, voltage, vc=.2e-6, function='powerLaw', p0=[], noiseLevel=1e-
     
     if function == 'powerLaw':
         if p0 == []: p0 = [0.95*np.nanmax(current), 25.]
-        popt, pcov = curve_fit(powerLaw, current, voltage, p0=p0, sigma=yerr, absolute_sigma=True)
-        residuals = voltage - powerLaw(current, *popt)
+        popt, pcov = curve_fit(ff.powerLaw, current, voltage, p0=p0, sigma=yerr, absolute_sigma=True)
+        residuals = voltage - ff.powerLaw(current, *popt)
     else:
         valid = (np.log(vc) <= voltage)
         current, voltage, yerr = current[valid], voltage[valid], yerr[valid]
-        popt, pcov = curve_fit(linear, current, voltage, sigma=yerr, absolute_sigma=True)
-        residuals = voltage - linear(current, *popt)
+        popt, pcov = curve_fit(ff.linear, current, voltage, sigma=yerr, absolute_sigma=True)
+        residuals = voltage - ff.linear(current, *popt)
         noiseLevel = np.log(noiseLevel)
         
     dof = len(voltage)-2 #datapoints - #parameters
@@ -262,14 +306,14 @@ def fitIV(current, voltage, vc=.2e-6, function='powerLaw', p0=[], noiseLevel=1e-
 
 def fitIcMeasurement(fpath, fformat='mit', vc=.2e-6, function='powerLaw', vThreshold=1e-7, iMin=0, vMax=20e-6, vb=False):
     """
-        fitIcMeasurement fits the IV data to a 2-parameter power law
+        fitIcMeasurement fits the IV data to a power law (linear space) or linear function (in logspace)
 
         INPUTS
         ----------------------------------------------------------
         fpath (str)           - Path to file containing IV curve
         vc (float)            - Critical voltage as defined from Ec = 1 uV/cm. Typically 0.2 uV.
         function (str)        - Fitting function (powerLaw | linear on loglog scale)
-        vThreshold (float)    - threshold use for background removal. Use voltage noise level ~ +/-.1 uV.
+        vThreshold (float)    - threshold use for background removal. Use voltage noise level, typically ~ +/-.1 uV.
 
         RETURNS
         ----------------------------------------------------------
@@ -281,26 +325,16 @@ def fitIcMeasurement(fpath, fformat='mit', vc=.2e-6, function='powerLaw', vThres
     ic, n, chisq, current, voltage, pcov = np.nan, np.nan, np.nan, [], [], [[np.nan, np.nan], [np.nan, np.nan]]
     
     try:
-        current, voltage, temperature = readIV(fpath, fformat=fformat, logIV=False, maxV=vMax, iMin=iMin)
-        logcurrent, logvoltage, _ = readIV(fpath, fformat=fformat, logIV=True, maxV=vMax, iMin=iMin)
-         
-        # Find an initial estimate for Ic an n using a linear fit in logspace.
-        if vb: print('File read:\n\n', logvoltage, '\n\n', logcurrent)
-        popt, pcov, _ = fitIV(logcurrent, logvoltage, vc=vc, function='linear', vb=vb)
+        # Fit with linear function in loglog, because the powerlaw needs initial estimate
+        current, voltage, temperature = readIV(fpath, fformat=fformat, logIV=True, maxV=vMax, iMin=iMin, vThreshold=vThreshold)
+        popt, pcov, chisq = fitIV(current, voltage, vc=vc, function='linear', vb=vb)
+        n, ic = popt[0], vc**(1./popt[0]) / np.exp(popt[1]/popt[0])
+        current, voltage = np.exp(current), np.exp(voltage) # we always want return current and voltage in linear space
         
-        ic, n = vc**(1./popt[0])/np.exp(popt[1]/popt[0]), popt[0]
-        if vb: print(popt, pcov, '\n\nAfter a first round, ic and n are :', ic, n)
-          
-        # Remove the background using a powerLaw fit in linear space and the initial estimates.
-        voltage = correctBackground(current, voltage, ic=ic, n=n, vThreshold=vThreshold)
-        
-        # Fit the data with the requested function
-        if function == 'powerLaw':
+        if function == 'powerLaw': # fit with power law if required
+            current, voltage, _ = readIV(fpath, fformat=fformat, logIV=False, maxV=vMax, iMin=iMin, vThreshold=vThreshold)
             popt, pcov, chisq = fitIV(current, voltage, vc=vc, function='powerLaw', p0=[ic, n], vb=vb)
             ic, n = popt[0], popt[1]
-        elif function == 'linear':
-            popt, pcov, chisq = fitIV(logcurrent, logvoltage, vc=vc, function='linear', vb=vb)
-            n, ic = popt[0], vc**(1./popt[0]) / np.exp(popt[1]/popt[0])
             
         if ((ic < 0) | (n < 1)):
             ic = n = np.nan
@@ -318,10 +352,10 @@ def correctBackground(current, voltage, vc=.2e-6, ic=30, n=30, vThreshold=1e-7, 
         cut = (current < ic*(vThreshold/vc)**(1./n))
         ccut, vcut = current[cut], voltage[cut]
         if (len(vcut) > 10):
-            popt, pcov = curve_fit(linear, ccut, vcut)
+            popt, pcov = curve_fit(ff.linear, ccut, vcut)
         else:
-            popt, pcov = curve_fit(linear, current, voltage)
-        background = linear(current, *popt)
+            popt, pcov = curve_fit(ff.linear, current, voltage)
+        background = ff.linear(current, *popt)
         voltage -= background
 
         popt, pcov, _ = fitIV(current, voltage, vc=vc, function='powerLaw', p0=[ic, n], vb=vb)
@@ -331,22 +365,6 @@ def correctBackground(current, voltage, vc=.2e-6, ic=30, n=30, vThreshold=1e-7, 
         if vb: print('Remove background cycle {}/5\n\n'.format(counter))
     return voltage
 
-'''
-def removeBackground(current, voltage, ic, n, noiseThreshold, vc):
-    #print(ic, noiseThreshold, vc, n)
-    iThreshold = ic*(noiseThreshold/vc)**(1./n)
-    
-    cut = (current < iThreshold)
-    ccut, vcut = current[cut], voltage[cut]
-    if (len(vcut) > 10):
-        popt, pcov = curve_fit(linear, ccut, vcut)
-    else:
-        popt, pcov = curve_fit(linear, current, voltage)
-    
-    background = linear(current, *popt)
-    return voltage - background
-'''
-
 def fitTcMeasurement(fpath, wsz=10, vb=False):
     tc = np.nan
     data = readTV(fpath)
@@ -355,8 +373,8 @@ def fitTcMeasurement(fpath, wsz=10, vb=False):
     vdT = (rdata.voltage.diff()/rdata.sampleT.diff())
     cut = np.isfinite(vdT).values
     temperature, vdT = rdata.sampleT[cut], vdT[cut]
-    popt, pcov = curve_fit(gaussian, temperature, vdT, p0=[2, rdata.sampleT[(rdata.voltage-rdata.voltage.max()/2).abs().argmin()], 1])
-    ysmooth = gaussian(xsmooth, *popt)
+    popt, pcov = curve_fit(ff.gaussian, temperature, vdT, p0=[2, rdata.sampleT[(rdata.voltage-rdata.voltage.max()/2).abs().argmin()], 1])
+    ysmooth = ff.gaussian(xsmooth, *popt)
     tc = xsmooth[np.argmax(ysmooth)]
     vtc = rdata.voltage[(rdata.sampleT-tc).abs().argmin()]
     if vb:
@@ -402,8 +420,8 @@ def fitTc(temperature, voltage, time, bounds=(80, 90), ax=None, label='', filter
     t50 = temperature[np.argmax(dV)]
     
     xsmooth = np.linspace(bounds[0], bounds[1], 100000)
-    popt_rise, _ = curve_fit(linear, temperature, voltage)
-    ysmooth_rise = linear(xsmooth, *popt_rise)
+    popt_rise, _ = curve_fit(ff.linear, temperature, voltage)
+    ysmooth_rise = ff.linear(xsmooth, *popt_rise)
 
     tore = -popt_rise[1]/popt_rise[0]
     
@@ -498,10 +516,10 @@ def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
             
     if vb:
         if fit:
-            popt, pcov = curve_fit(poly4, temperatures, ics)
+            popt, pcov = curve_fit(ff.poly4, temperatures, ics)
 
             xsmooth = np.linspace(0, 100, 10000)
-            ysmooth = poly4(xsmooth, *popt)
+            ysmooth = ff.poly4(xsmooth, *popt)
             ax[0].plot(xsmooth, ysmooth, marker='None', linestyle='-', linewidth=4, alpha=.2, color=color)
             
         ax[0].plot(temperatures, ics, marker='+', linestyle='None', label=label, color=color)
@@ -510,3 +528,60 @@ def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
         ax[0].legend(loc='best')
     
     return fig, ax, ics, temperatures, popt
+
+########################################################################################
+########################################################################################
+######################## BEAM ON SPECIFIC FUNCTIONS ####################################
+########################################################################################
+########################################################################################
+
+def invertIcT(icnorm, popt, T0=20.):
+    '''
+        invertIcT finds the optimal parameters for T(Icnorm) given the optimal parameters
+        of a third order polynomial fit to Icnorm(T), where Icnorm = Ic/Ic0.
+        
+        icnorm (float)      - Ic/Ic0 or degradation level correcponding to the measured points
+        popt (float, array) - Optimumal parameters for Ic(T)
+        T0 (float)          - Temperature of the highest Ic.  
+    '''
+    def f(x):
+        return popt[0]*(x-T0)**3 + popt[1]*(x-T0)**2 + popt[2]*(x-T0) + 1 - icnorm
+    return brentq(f, 19, 90)
+
+
+def getCorrectedSuppression(icon, icoff, ic0, 
+                            poptp=[-1.91142195e-07,  1.45788152e-04, -2.38487357e-02], 
+                            poptd=[-4.62920679e-06,  7.73025030e-04, -4.75032687e-02], Tcp=88.49, Tcd=68.62868916):
+    '''
+        getCorrectedSuppression assumes that Ic suppression is thermal and interpolates between Ic(T) pristine 
+        and Ic(T) degraded to find Ic(T) damaged, using Ic degradation as an interpolation variable.
+        
+        INPUTS
+        --------------
+        icon (float)  - critical current measured during irradiation
+        icoff (float) - critical current measured before irradiation
+        ic0 (float)   - critical current measured for the pristine sample
+        
+        poptp (array, float) - optimized parameters for Ic(T) when tape is in pristine condition
+        poptd (array, float) - optimized parameters for Ic(T) when tape is at maximum degradation
+        Tcp (float)          - value of critical temperature when tape is in pristine condition
+        Tcd (float)          - values of critical temperature when tape is at maximum degradation
+        
+        RETURNS
+        --------------
+        icOnNoDamage (float)        - critical current we would measure for the pristine tape
+        suppressionNoDamage (float) - critical current suppression we would measured for the pristine tape
+        Ton (float)                 - temperature corresponding to suppressionNoDamage
+    '''
+    Td, Tp = invertIcT(icon/icoff, poptd), invertIcT(icon/icoff, poptp)
+    desiredTcDegradation, damagedTcDegradation = ff.sqrt(icoff/ic0), Tcd/Tcp
+    Ton = Td + (Tp - Td)*(desiredTcDegradation-damagedTcDegradation)/(1-damagedTcDegradation)
+    
+    icOnNoDamage = ic0*ff.cubic2(Ton, *poptp)
+    suppressionNoDamage = 1-ff.cubic2(Ton, *poptp)
+    
+    return corrected_suppression, icOnNoDamage, Ton
+
+
+# Call this version if you need to predict an entire curve to verify the procedure
+v_getCorrectedSuppression = np.vectorize(getCorrectedSuppression)
