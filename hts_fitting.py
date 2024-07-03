@@ -520,12 +520,12 @@ def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
 
             xsmooth = np.linspace(0, 100, 10000)
             ysmooth = ff.poly4(xsmooth, *popt)
-            ax[0].plot(xsmooth, ysmooth, marker='None', linestyle='-', linewidth=4, alpha=.2, color=color)
+            ax.plot(xsmooth, ysmooth, marker='None', linestyle='-', linewidth=4, alpha=.2, color=color)
             
-        ax[0].plot(temperatures, ics, marker='+', linestyle='None', label=label, color=color)
-        ax[0].set_xlabel('Temperature [K]')
-        ax[0].set_ylabel('Critical current [A]')
-        ax[0].legend(loc='best')
+        ax.plot(temperatures, ics, marker='+', linestyle='None', label=label, color=color)
+        ax.set_xlabel('Temperature [K]')
+        ax.set_ylabel('Critical current [A]')
+        ax.legend(loc='best')
     
     return fig, ax, ics, temperatures, popt
 
