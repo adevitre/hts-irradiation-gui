@@ -499,9 +499,7 @@ def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
             fig, ax = plt.subplots()
         else:
             ax = fig.axes
-    else:
-        ax = None
-    
+
     ics, temperatures, popt = [], [], []
     
     for fpath in fpaths:
@@ -509,17 +507,15 @@ def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
             current, voltage, temperature = readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False)
             popt, pcov, chisq = fitIV(current, voltage)
             ics.append(popt[0])
-            temperatures.append(np.mean(temperature[-10:]))
-            
+            temperatures.append(np.mean(temperature[-10:]))  
         except Exception as e:
-            print(fpath, e)
+            if vb: print(fpath, e)
             
     if fit:
-        popt, pcov = curve_fit(ff.poly4, temperatures, ics)
-
-        xsmooth = np.linspace(0, 100, 10000)
-        ysmooth = ff.poly4(xsmooth, *popt)
-        ax.plot(xsmooth, ysmooth, marker='None', linestyle='-', linewidth=4, alpha=.2, color=color)
+        popt, pcov = curve_fit(ff.cubic, temperatures, ics)
+        if vb:
+            xsmooth = np.linspace(0, 100, 10000)
+            ax.plot(xsmooth, ff.cubic(xsmooth, *popt), marker='None', linestyle='-', linewidth=4, alpha=.2, color=color)
 
     ax.plot(temperatures, ics, marker='+', linestyle='None', label=label, color=color)
     ax.set_xlabel('Temperature [K]')
