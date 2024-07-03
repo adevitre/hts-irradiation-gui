@@ -25,14 +25,14 @@ def getMeasurementStartTime(fpaths, year='2024'):
         endtimes.append(pd.to_datetime('-'.join(enddate.split('_'))))
     return starttimes, endtimes
 
-def loadBeamCurrent(fpath, sname):
+def loadBeamCurrent(ibpath, sname):
     """
     loadBeamCurrent reads an excel sheet containing the beam current.
     INPUTS
-    path (str) - absolute path to excel spreadsheet
+    ibpath (str) - absolute path to excel spreadsheet
     sname (str) - sheet name where columns 2 is relative time and column 3 is beam current in nA
     """
-    data = pd.read_excel(io=fpath, sheet_name=sname, usecols=[0, 1, 2], names=['time_datetime', 'time_s', 'ibeam_nA'])
+    data = pd.read_excel(io=ibpath, sheet_name=sname, usecols=[0, 1, 2], names=['time_datetime', 'time_s', 'ibeam_nA'])
     try:
         data['time_datetime'] = pd.to_datetime(data['time_datetime'])
     except Exception as e:
@@ -43,7 +43,7 @@ def loadBeamCurrent(fpath, sname):
 
 def plotBeamCurrent(data, fig=None, color='k'):
     if fig is None:
-        fig, axdt = plt.subplots()
+        fig, axdt = plt.subplots(figsize=(9, 4))
     else:
         axdt = fig.gca()
     
@@ -66,13 +66,15 @@ def plotBeamCurrent(data, fig=None, color='k'):
 
 def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname, fig=None):
     data = loadBeamCurrent(ibpath, sname=sname)
-    if fig is None: fig, ax = plt.subplots()
+    if fig is None: fig, ax = plt.subplots(figsize=(9, 4))
     fig, axrt, axdt = plotBeamCurrent(data, fig=fig)
     starts, ends = getMeasurementStartTime(fpaths, year='2024')
     for t0, t1 in zip(starts, ends):
         axdt.axvline(t0, color='b', linestyle=':')
         axdt.axvspan(t0, t1, color='b', alpha=.1)
-    return fig, axrt, axdt
+        axdt.axvline(t1, color='b', linestyle=':')
+        
+    return fig, axrt, axdt, data
 
 def compute_fluence(time, current, d=0.003175):
     return integrate.trapz(current*1e-9/(np.pi*(d/2.)**2), time)/constants.elementary_charge

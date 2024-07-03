@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import hts_fitfunctions as ff
+from scipy.optimize import brentq
 
 
 def renameFiles(directory):
@@ -32,3 +34,52 @@ def timestamp_to_seconds(timestamp):
     hh, mm, ss = timestamp[11:].split('-')
     return float(hh)*3600+float(mm)*60+float(ss)/1e6
     
+def fname_to_timestamp(fname):
+    y, m, d = [int(n) for n in fname.split('_')[1].split('-')]
+    hh, mm, us = fname.split('_')[2].split('-')
+    hh, mm, ss, us = int(hh), int(mm), int(us[:2]), int(us[2:])
+    return pd.Timestamp(year=y, month=m, day=d, hour=hh, minute=mm, second=ss, microsecond=us)
+
+def time_between_measurements(fname1, fname2):
+    ts1 = fname_to_timestamp(fname1)
+    ts2 = fname_to_timestamp(fname2)
+    return abs(ts1 - ts2)
+
+
+######################### Beam-on experiments #########################
+
+def invertIcT(icnorm, popt, T0=20.):
+    '''
+        invertIcT finds the optimal parameters for T(Icnorm) given the optimal parameters
+        of a third order polynomial fit to Icnorm(T), where Icnorm = Ic/Ic0.
+        
+        icnorm (float)      - Ic/Ic0 or degradation level correcponding to the measured points
+        popt (float, array) - Optimumal parameters for Ic(T)
+        T0 (float)          - Temperature of the highest Ic.  
+    '''
+    def f(x):
+        return popt[0]*(x-T0)**3 + popt[1]*(x-T0)**2 + popt[2]*(x-T0) + 1 - icnorm
+    return brentq(f, 19, 90)
+
+def getCorrectedSuppression37(icon, icoff, ic0, poptp=[-3.88998965e-07,  1.66203890e-04, -2.43896814e-02], poptd=[-4.67823165e-06,  5.38287476e-04, -3.67295261e-02]):
+    Tdamaged, degradation =  np.array([]), icoff/ic0
+    Td, Tp = invertIcT(icon/icoff, poptd), invertIcT(icon/icoff, poptp)
+    Ton = Td + (Tp - Td)*(degradation-0.18657000907933957)/(1-0.18657000907933957)
+    return 1-ff.cubic2(Ton, *poptp), ic0*ff.cubic2(Ton, *poptp), Ton
+
+def getCorrectedSuppression29(icon, icoff, ic0, poptp=[2.36162190e-07, 9.85656675e-05, -2.24987554e-02], poptd=[-2.11990545e-06, 3.58520738e-04, -3.32828593e-02]):
+    Tdamaged, degradation =  np.array([]), icoff/ic0
+    Td, Tp = invertIcT(icon/icoff, poptd), invertIcT(icon/icoff, poptp)
+    Ton = Td + (Tp - Td)*(degradation-0.18592005711978735)/(1-0.18592005711978735)
+    return 1-ff.cubic2(Ton, *poptp), ic0*ff.cubic2(Ton, *poptp), Ton
+
+def getCorrectedSuppression28(icon, icoff, ic0, poptp=[ 2.36162190e-07, 9.85656675e-05, -2.24987554e-02], poptd=[-1.27385146e-06, 4.06420746e-04, -3.71872166e-02]):
+    Tdamaged, degradation =  np.array([]), icoff/ic0
+    Td, Tp = invertIcT(icon/icoff, poptd), invertIcT(icon/icoff, poptp)
+    Ton = Td + (Tp - Td)*(degradation-0.12106582898)/(1-0.12106582898)
+    return 1-ff.cubic2(Ton, *poptp), ic0*ff.cubic2(Ton, *poptp), Ton
+
+
+v_getCorrectedSuppression37 = np.vectorize(getCorrectedSuppression37)
+v_getCorrectedSuppression29 = np.vectorize(getCorrectedSuppression29)
+v_getCorrectedSuppression28= np.vectorize(getCorrectedSuppression28)
