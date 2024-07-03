@@ -580,7 +580,7 @@ def getCorrectedSuppression(icon, icoff, ic0,
     icOnNoDamage = ic0*ff.cubic2(Ton, *poptp)
     suppressionNoDamage = 1-ff.cubic2(Ton, *poptp)
     
-    return corrected_suppression, icOnNoDamage, Ton
+    return suppressionNoDamage, icOnNoDamage, Ton
 
 
 # Call this version if you need to predict an entire curve to verify the procedure

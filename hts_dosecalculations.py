@@ -43,7 +43,7 @@ def loadBeamCurrent(ibpath, sname):
 
 def plotBeamCurrent(data, fig=None, color='k'):
     if fig is None:
-        fig, axdt = plt.subplots()
+        fig, axdt = plt.subplots(figsize=(9, 4))
     else:
         axdt = fig.gca()
     
@@ -66,12 +66,14 @@ def plotBeamCurrent(data, fig=None, color='k'):
 
 def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname, fig=None):
     data = loadBeamCurrent(ibpath, sname=sname)
-    if fig is None: fig, ax = plt.subplots()
+    if fig is None: fig, ax = plt.subplots(figsize=(9, 4))
     fig, axrt, axdt = plotBeamCurrent(data, fig=fig)
     starts, ends = getMeasurementStartTime(fpaths, year='2024')
     for t0, t1 in zip(starts, ends):
         axdt.axvline(t0, color='b', linestyle=':')
         axdt.axvspan(t0, t1, color='b', alpha=.1)
+        axdt.axvline(t1, color='b', linestyle=':')
+        
     return fig, axrt, axdt, data
 
 def compute_fluence(time, current, d=0.003175):
