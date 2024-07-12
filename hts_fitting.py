@@ -56,6 +56,7 @@ def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vThre
 
         if fformat == 'mit':
             current, voltage, tHTS, tTAR = np.genfromtxt(fpath, usecols=[2, 3, 4, 5], unpack=True)
+            
         elif fformat == 'tuv':
             current, voltage = np.genfromtxt(fpath, usecols=[0, 1], skip_footer=2, delimiter=' ', unpack=True)
             if platform.system() == "Windows":
@@ -499,6 +500,8 @@ def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
             fig, ax = plt.subplots()
         else:
             ax = fig.axes
+    else:
+        fig, ax = None, None
 
     ics, temperatures, popt = [], [], []
     
