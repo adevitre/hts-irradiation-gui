@@ -56,6 +56,7 @@ def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vThre
 
         if fformat == 'mit':
             current, voltage, tHTS, tTAR = np.genfromtxt(fpath, usecols=[2, 3, 4, 5], unpack=True)
+            
         elif fformat == 'tuv':
             current, voltage = np.genfromtxt(fpath, usecols=[0, 1], skip_footer=2, delimiter=' ', unpack=True)
             if platform.system() == "Windows":
@@ -499,6 +500,8 @@ def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
             fig, ax = plt.subplots()
         else:
             ax = fig.axes
+    else:
+        fig, ax = None, None
 
     ics, temperatures, popt = [], [], []
     
@@ -516,11 +519,10 @@ def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
         if vb:
             xsmooth = np.linspace(0, 100, 10000)
             ax.plot(xsmooth, ff.cubic(xsmooth, *popt), marker='None', linestyle='-', linewidth=4, alpha=.2, color=color)
-
-    ax.plot(temperatures, ics, marker='+', linestyle='None', label=label, color=color)
-    ax.set_xlabel('Temperature [K]')
-    ax.set_ylabel('Critical current [A]')
-    ax.legend(loc='best')
+            ax.plot(temperatures, ics, marker='+', linestyle='None', label=label, color=color)
+            ax.set_xlabel('Temperature [K]')
+            ax.set_ylabel('Critical current [A]')
+            ax.legend(loc='best')
     
     return fig, ax, ics, temperatures, popt
 
