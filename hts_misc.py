@@ -45,6 +45,34 @@ def time_between_measurements(fname1, fname2):
     ts2 = fname_to_timestamp(fname2)
     return abs(ts1 - ts2)
 
+def readEnvironmentFile(fpath):
+    return pd.read_csv(fpath, delim_whitespace=True, parse_dates={'datetime' : [0, 1]}, date_format={'date':'%d/%m/%y', 'timestamp':'%H:%M:%S.%f'})
+
+def concatenateEnvironmentFiles(fpaths, vb=False):
+    i, deltaT = 0, 0
+    data = readEnvironmentFile(fpaths[0])
+
+    for fpath in fpaths[1:]:
+        nextdata = readEnvironmentFile(fpath)
+        deltaT = (nextdata.iloc[0].datetime-data.iloc[-1].datetime).total_seconds()
+        nextdata['time_s'] += data.time_s.values[-1] + deltaT
+        missing_times = np.arange(data.time_s.values[-1], nextdata.time_s.values[0], data.time_s[-20:].diff().mean())
+
+        data = pd.concat([data, pd.DataFrame({'time_s': missing_times}), nextdata], ignore_index=True)
+        data = data.sort_values('time_s').interpolate(method='linear').reset_index(drop=True)
+    
+    if vb:
+        fig, ax = plt.subplots(figsize=(9, 4))
+        if 'temperature' in fpaths[0]:
+            ax.plot(data.time_s, data.targetT_K, color='r')
+            ax.plot(data.time_s, data.sampleT_K, color='b')
+            ax.set_ylim(0, 300)
+            ax.set_xlim(0, data.time_s.max())
+        else:
+            ax.semilogy(data.time_s, data.pressure_torr, color='g')
+            ax.set_ylim(1e-8, 1e3)
+            ax.set_xlim(0, data.time_s.max())
+    return data
 
 ######################### Beam-on experiments #########################
 

@@ -55,7 +55,7 @@ def plotBeamCurrent(data, fig=None, color='k'):
     
     axrt = axdt.twiny()
     
-    axrt.plot(data.time_s, data.ibeam_nA, color=color, marker='+')
+    axrt.plot(data.time_s, data.ibeam_nA, color=color, marker='+', markersize=2)
     axrt.set_xlim(data.time_s.min(), data.time_s.max())
     axrt.set_ylim(0, data.ibeam_nA.max())
     axrt.set_xlabel('Relative Time [s]')
