@@ -43,7 +43,7 @@ def configure_ports(vb=True, config_directory='config'):
     time.sleep(.2)
 
 
-def configure_device(device, usb_port='/dev/ttyUSB0', vb=False):
+def configure_device(device, usb_port='/dev/ttyUSB0', vb=False): 
     '''
         configure_device tries to connect a device through a serial port based on the serial communication parameters
         stored in config/devicename.json
@@ -60,9 +60,6 @@ def configure_device(device, usb_port='/dev/ttyUSB0', vb=False):
         ser = serial.Serial(usb_port, baudrate=device['baudrate'], bytesize=device['bytesize'], stopbits=device['stopbits'], parity=device['parity'], xonxoff=device['xonxoff'], timeout=1, exclusive=True)
         ser.write(bytes(device['greeting']+device['ending'],'utf-8'))
         r = ser.read(100).decode('utf-8', errors='backslashreplace').strip()
-        
-        print(r)
-
         if re.search(device['response'], r):
             success = True
 

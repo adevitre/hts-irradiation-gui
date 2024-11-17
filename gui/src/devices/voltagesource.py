@@ -1,12 +1,12 @@
 import numpy, re, time
-from serialdevice import SerialDevice
+from device import Device
 
 '''
     A SerialDevice class for communications with a Keithley 2231A-30-3 Triple-Channel DC Power Supply.
     @author Alexis Devitre, Ben Clark
     @lastModified 15/06/2023
 '''
-class VoltageSource(SerialDevice):
+class VoltageSource(Device):
     
     def __init__(self, waitLock=350):
         super().__init__('voltagesource', waitLock=waitLock)
@@ -50,7 +50,7 @@ class VoltageSource(SerialDevice):
     '''
     def setCurrent(self, current):
         try:
-            self.write('APPLY CH1,10,{:4.3f}'.format(current))
+            self.write('APPLY CH1,30,{:4.3f}'.format(current))
             self.write('CHAN:OUTP ON')
             time.sleep(0.15)
         except Exception as e:

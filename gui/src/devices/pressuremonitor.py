@@ -1,5 +1,5 @@
 import numpy, re
-from serialdevice import SerialDevice
+from device import Device
 
 '''
     A SerialDevice class for communications with a FlexRax4000 pressure monitor.
@@ -7,7 +7,7 @@ from serialdevice import SerialDevice
     @author Alexis Devitre, David Fischer
     @lastModified 21/08/2021
 '''
-class PressureMonitor(SerialDevice):
+class PressureMonitor(Device):
     
     def __init__(self, waitLock=2950):
         super().__init__('pressure_monitor', waitLock=waitLock)

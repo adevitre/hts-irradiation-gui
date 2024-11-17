@@ -2,15 +2,16 @@ import sys
 import serial
 import time
 
-RELAYBOARD_ADDR_100A_SAMPLE = 0  # checked 14/03/2023
-RELAYBOARD_ADDR_100mA_SAMPLE = 1 # checked 14/03/2023
-RELAYBOARD_ADDR_6A_SAMPLE = 2    # not checked
-RELAYBOARD_ADDR_TURBO_SCROLL = 3 # checked 14/03/2023
-RELAYBOARD_ADDR_COLDHEAD = 10    # checked 14/03/2023
-RELAYBOARD_ADDR_NVM_PICO = 12    # checked 14/03/2023
-RELAYBOARD_ADDR_TARGETLIGHT = 13    # checked NOT
-RELAYBOARD_ADDR_CHAMBERLIGHT = 14    # checked NOT
+RELAYBOARD_ADDR_100A_SAMPLE = 0   # checked 14/03/2023
+RELAYBOARD_ADDR_100mA_SAMPLE = 1  # checked 14/03/2023
+RELAYBOARD_ADDR_6A_SAMPLE = 2     # not checked
+RELAYBOARD_ADDR_TURBO_SCROLL = 3  # checked 14/03/2023
+RELAYBOARD_ADDR_COLDHEAD = 10     # checked 14/03/2023
+RELAYBOARD_ADDR_NVM_PICO = 12     # checked 14/03/2023
+RELAYBOARD_ADDR_TARGETLIGHT = 13  # checked 14/03/2024
+RELAYBOARD_ADDR_CHAMBERLIGHT = 14 # checked 14/03/2024
 RELAYBOARD_ADDR_FARADAYCUP = 30
+RELAYBOARD_ADDR_QPS = 15          # NOT checked
 
 class Relays:
     
@@ -218,3 +219,8 @@ class Relays:
             self.setRelayState(index=RELAYBOARD_ADDR_CHAMBERLIGHT, state='on')
         else:
             self.setRelayState(index=RELAYBOARD_ADDR_CHAMBERLIGHT, state='off')
+
+    def resetQPS(self):
+        self.setRelayState(index=RELAYBOARD_ADDR_QPS, state='on')
+        time.sleep(0.5)
+        self.setRelayState(index=RELAYBOARD_ADDR_QPS, state='off')

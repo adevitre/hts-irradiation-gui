@@ -26,7 +26,7 @@ class AddTcStepWindow(QWidget):
         super(AddTcStepWindow, self).__init__(parent)
         #styles = load_json(fname='styles.json') 
 
-        self.setGeometry(100, 100, 400, 200)               # x, y, width, height FIXLATER
+        self.setGeometry(100, 100, 400, 200) # x, y, width, height FIXLATER
         QGridLayout = QtWidgets.QGridLayout(self)
         self.default_directory = default_directory
 
@@ -120,19 +120,9 @@ class AddTcStepWindow(QWidget):
             print(e)
         regex = re.compile('[@ !#$%^&*()<>?/\|}{~:]')
         if(regex.search(desc) == None) and desc != "":
-            #replace this with adjusted signal 
             self.ok_signal.emit('MeasureTc : Label = {} ; Start-Temperature = {} K; Stop-Temperature = {} K; Ramp-rate {} K/min; Transport-current = {} mA'.format(desc, self.QDoubleSpinBox_startT.value(), self.QDoubleSpinBox_stopT.value(),self.QDoubleSpinBox_ramp.value(),self.QComboBox_Current.currentText()))
             self.close()
         if desc == "":
             self.QLabel_err.setText("Description cannot be empty")
         else:
             self.QLabel_err.setText("Description cannot contain special characters, \nonly alphanumeric and - and _")
-            
-# #for testing
-# app = QApplication(sys.argv)
-# w = AddTcStepWindow()
-# w.show()
-# app.exec()
-
-
-

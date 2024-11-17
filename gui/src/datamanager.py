@@ -22,17 +22,22 @@ class DataManager(QObject):
         super(DataManager, self).__init__(parent)
         
         self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')
-        
-        self.tcData, self.pmData, self.paData = None, None, None
         self.threadpool = threadpool
         self.mutexTc, self.mutexPm, self.mutexPlots = QMutex(), QMutex(), QMutex()
+        self.initialize()
+        
+    def __del__(self):
+        self.saveEnvironmentData()
+    
+    def initialize(self):
         
         self.vc = 2e-7                    # 1 uV/cm2 * bridgeLength (0.2 cm)
         self.voltageNoiseThreshold = 7e-7 # This value is set above the typical noise of the system to make sure that the LogLog
                                           # fit only takes values from the exponential voltage rise
         self.storingData = False
         self.backupFlags = [False, False] # Indicates whether temperature, pressure time series should be backed up to text files.
-        
+        self.tcData, self.pmData, self.paData = None, None, None
+
         # create the save directory and subdirectories
         self.save_directory = self.preferences["temporary_savefolder"]+str(datetime.datetime.now()).replace(' ', '_').replace(':', '-').replace('.', '')
         if os.path.exists(self.save_directory):
@@ -55,38 +60,35 @@ class DataManager(QObject):
             'temperature_{}.txt'.format(timestamp),
             'pressure_{}.txt'.format(timestamp)
         ]
-        
-    def __del__(self):
-        self.saveEnvironmentData()
-    
+
     def log_event(self, when, what, comment):
         log = '{:30s}\t{:15s}\t{:100s}'.format(when, what, comment)
         with open(self.save_directory + '/logfile.txt', 'a+') as f:
             f.write(log+'\n')
             f.close()
         
-    def set_saveDirectory(self, newDirectory, folderName, sessionDescription):
+    def set_saveDirectory(self, newDirectory, folderName):
         '''
             set_saveDirectory moves the information in tempFolderName to the save location and handles the case
             where the user restarts the GUI but wishes to append the data to an existing folder.
             
             savepath           - (str) Path where the save folder should be stored.
             folderName         - (str) User defined name to which a timestamp is appended making the save directory unique.
-            sessionDescription - (str) User input commenting on the goals of the session
         '''
         
         if folderName in os.listdir(newDirectory):
-            comment = 'Continued after GUI restart: {}'.format(sessionDescription)
+            comment = 'Continued after GUI restart'
         else:
             folderName = str(datetime.datetime.now()).replace(' ', '_')+'_'+folderName # timestamp makes savedirectory unique
             shutil.move(self.save_directory, newDirectory+'/'+folderName)
-            comment = 'New session started: {}'.format(sessionDescription)
-        
+            comment = 'New session started'
+
         self.save_directory = newDirectory+'/'+folderName
         self.log_signal.emit('SessionStart', comment)
     
     def startTime(self):
         self.t0 = time.time()
+        self.tcData, self.pmData, self.paData = None, None, None
         
     def updatePmReadings(self, pressure):
         try:
@@ -141,10 +143,10 @@ class DataManager(QObject):
             elif measurement == 'Vt':
                 f.write('# Tavg = {:4.2f} K, {}\n'.format(kwargs['tavg'], kwargs['tag']))
                 
-            f.write('#{:30}  {:6}  {:20}  {:20}  {:6}  {:6}'.format('datetime', 't_s', 'iHTS_A', 'vHTS_V', 'tHTS_K', 'tTAR_K'))
+            f.write('#{:30}  {:6}  {:20}  {:20}  {:6}  {:6}  {:6}  {:6}'.format('datetime', 't_s', 'iHTS_A', 'vHTS_V', 'tHTS_K', 'tTAR_K', 'tHOL_K', 'tSPA_K'))
             
             for datapoint in datapoints:
-                f.write('\n{:<30}  {:6.2f}  {:20.8e}  {:20.8e}  {:6.4f}  {:6.4f}'.format(self.float2datetime(datapoint[0]), datapoint[1], datapoint[2], datapoint[3], datapoint[4], datapoint[5]))
+                f.write('\n{:<30}  {:6.2f}  {:20.8e}  {:20.8e}  {:6.4f}  {:6.4f}  {:6.4f}  {:6.4f}'.format(self.float2datetime(datapoint[0]), datapoint[1], datapoint[2], datapoint[3], datapoint[4], datapoint[5],  datapoint[-2],  datapoint[-1]))
             f.close()
         
         with open(self.save_directory+'/fittedParameters.txt', 'a') as f:
@@ -156,7 +158,12 @@ class DataManager(QObject):
             f.close()
     
     def fitIcMeasurement(self, current, voltage, noiseThreshold=1e-7):
-        return fitIV(current, voltage, vc=self.vc, vThreshold=noiseThreshold, fitType='logarithmic')
+        try:
+            ic, n, voltage = fitIV(current, voltage, vc=self.vc, vThreshold=noiseThreshold, fitType='logarithmic')
+        except Exception as e:
+            ic, n, voltage = 0., 0., voltage
+            print(type(e), e)
+        return ic, n, voltage
     
     def fitTcMeasurement(self, temperature, voltage, tag):
         return fitTV(temperature, voltage, tag, fitType='electric-field', vb=False)
@@ -190,10 +197,7 @@ class DataManager(QObject):
             
             tcData = self.tcData.loc[self.tcData.index[-int(np.ceil(2*self.preferences['sampling_period_tc'])+cut):]].copy(deep=True)    
             pmData = self.pmData.loc[self.pmData.index[-int(np.ceil(2*self.preferences['sampling_period_pm'])+cut):]].copy(deep=True)    
-
-            #tcData = self.tcData.last('{:5.0f}s'.format(np.ceil(2*self.preferences['sampling_period_tc']+cut))).copy(deep=True)    
-            #pmData = self.pmData.last('{:5.0f}s'.format(np.ceil(2*self.preferences['sampling_period_pm']+cut))).copy(deep=True)
-                                     
+                    
             self.plot_signal.emit(tcData.time_s.values, pmData.time_s.values, tcData.setpt_K.values, tcData.sampleT_K.values, tcData.targetT_K.values, tcData.holderT_K.values, tcData.spareT_K.values, pmData.pressure_torr.values, tcData.heaterPower_W.values)
         except AttributeError as e:
             print('DataManager:updateEnvironmentPlots returned: ', e)
@@ -231,6 +235,9 @@ class DataManager(QObject):
             value = self.tcData.setpt_K.iloc[-1]
         return value
     
+    def getLatestTemperatureReading(self):
+        return self.tcData.sampleT_K.iloc[-1], self.tcData.targetT_K.iloc[-1], self.tcData.holderT_K.iloc[-1], self.tcData.spareT_K.iloc[-1] 
+    
     def saveEnvironmentData(self):
         try:
             self.mutexPlots.lock()
@@ -251,9 +258,10 @@ class DataManager(QObject):
                             f.write(header+'\n')
                             f.close()
                     data.to_csv(fpath+fname, index=True, header=False, mode='a', sep='\t')
-                    
-            self.tcData = self.tcData.assign(backedup=True)
-            self.pmData = self.pmData.assign(backedup=True)
+
+            if (self.tcData is not None) and (self.pmData is not None):        
+                self.tcData = self.tcData.assign(backedup=True)
+                self.pmData = self.pmData.assign(backedup=True)
             
             comment = 'Temperature and heater power {}; pressure {}'.format(self.backupFlags[0], self.backupFlags[1])
         

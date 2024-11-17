@@ -1,12 +1,12 @@
 import numpy, re, time
-from serialdevice import SerialDevice
+from device import Device
 
 '''
     A SerialDevice class for communications with a Keithley2182A nanovoltmeter.
     @author Alexis Devitre, David Fischer
     @lastModified 28/04/2022
 '''
-class NanoVoltmeter(SerialDevice):
+class NanoVoltmeter(Device):
     
     def __init__(self, waitLock=350):
         super().__init__('nanovoltmeter', waitLock=waitLock)
@@ -76,11 +76,11 @@ class NanoVoltmeter(SerialDevice):
         if voltages is not []:
             voltages = numpy.array(voltages)
             std = numpy.nanstd(voltages)
-            mean = numpy.nanmean(voltages)
-            self.offset = numpy.nanmean(voltages[((mean - std) < voltages) & (voltages < (mean+std))]) # prevents abnormal offsets due to large fluctuations
+            median = numpy.nanmedian(voltages)
+            self.offset = numpy.nanmean(voltages[((median - std) < voltages) & (voltages < (median+std))]) # prevents abnormal offsets due to large fluctuations
         else:
             print('NanoVoltmeter::setOffset raised: all voltage measurements failed')
-        return self.offset
+        return self.offset*self.polarity
     
     def measure(self, removeOffset=True, vb=True):    
         """

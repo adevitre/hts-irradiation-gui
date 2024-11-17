@@ -9,10 +9,12 @@ class CurrentSource100A:
         CurrentSource100A controls the 100A power supply for critical current measurements
         Note: the circuit logic to connect/disconnect this power supply to the sample is in relays.py
     '''
-    def __init__(self, a, b, shuntR, voltageSource, currentSourceCAEN):
+    def __init__(self, a, b, shuntR, voltageSource, currentSourceCAEN, currentSourceTDK):
         self.shuntR = shuntR
         self.vs = voltageSource
         self.csCAEN = currentSourceCAEN
+        self.csTDK = currentSourceTDK
+
         self.updateCalibration(a, b)
 
     def __del__(self):
@@ -39,7 +41,9 @@ class CurrentSource100A:
         
         elif currentSource == hwparams['LABEL_CAEN']:
             self.csCAEN.setCurrent(current)
-            time.sleep(.2) # stabilize the current
+        
+        elif currentSource == hwparams['LABEL_TDK']:
+            self.csTDK.setCurrent(current)
 
         elif currentSource == hwparams['LABEL_CS100A']:
             if useCalibration:
@@ -48,15 +52,17 @@ class CurrentSource100A:
                     print('calib {} {}'.format(self.a, self.b))
             else:           
                 control_voltage = current*0.58/101.#2./45.692
-
+            print(control_voltage, current)
             # Avoids negative currents or overcurrents set by calibration
             if (control_voltage < 0) | (control_voltage > .75):
-                if vb:
-                    print('Control voltage is out of range with value {}\nFor safety, control voltage was set to NaN.'.format(control_voltage))
+                print('Bad calibration')
+                if vb: print('Control voltage is out of range with value {}\nFor safety, control voltage was set to NaN.'.format(control_voltage))
                 control_voltage = numpy.nan
             
             self.setControlVoltage(control_voltage)
+            print(control_voltage, 'control voltage')
             time.sleep(.2) # stabilize the current
+
         return control_voltage
     
     def enableParallelMode(self, enabled=False):
