@@ -74,13 +74,13 @@ class NanoVoltmeter(Device):
                 print(type(voltages), voltages)
 
         if voltages is not []:
-            voltages = numpy.array(voltages)
+            voltages = numpy.array(voltages)*self.polarity
             std = numpy.nanstd(voltages)
             median = numpy.nanmedian(voltages)
             self.offset = numpy.nanmean(voltages[((median - std) < voltages) & (voltages < (median+std))]) # prevents abnormal offsets due to large fluctuations
         else:
             print('NanoVoltmeter::setOffset raised: all voltage measurements failed')
-        return self.offset*self.polarity
+        return self.offset
     
     def measure(self, removeOffset=True, vb=True):    
         """

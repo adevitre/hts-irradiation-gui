@@ -141,10 +141,15 @@ class TaskManager(QObject):
     
     def measureTc(self, startT, rampRate, stopT, transportCurrent, tag):
         """
-        MeasureTc ramps the temperature at a fixed rate, while measuring voltage at fixed transport current. 
-        The setpoint is set past stopT accounting for a possible temperature difference between the PID 
-        sensor (CX-CH) and the sensor on sample (CX-T).
+        MeasureTc ramps the temperature at a fixed rate, while measuring voltage at fixed transport current.
         
+        The setpoint is set past stopT accounting for a possible temperature difference between the PID 
+        sensor (CX-CH) and the sensor on sample (CX-T). But the temperature is reset to tstop once the
+        measurement ends.
+        
+        Each voltage point is half of the difference between the measured voltage in forward bias (vpos), 
+        and that measured in reverse bias (vneg) to remove offset and thermal voltages.
+
         @params
             startT (float): Start temperature in K.
             stopT (float): Stop temperature in K.
@@ -155,16 +160,21 @@ class TaskManager(QObject):
 
         self.connectFourPointProbe(connected=True, current_source=HARDWARE_PARAMETERS['LABEL_LS121'])
         
+        # Set the PID sensor to startT
         sampleT, targetT = self.dm.getLatestValue('Sample Temperature'), self.dm.getLatestValue('Target Temperature')
-        self.stabilizeTemperature(setTemperature=startT, rampRate=9, stabilizationMargin=self.preferences['TcStabilizationMargin'], stabilizationTime=60, vb=True)
+        self.stabilizeTemperature(setTemperature=startT, rampRate=9, stabilizationMargin=self.preferences['TcStabilizationMargin'], stabilizationTime=90, vb=True)
         
+        # Set the sample sensor to startT
+        sampleT, targetT = self.dm.getLatestValue('Sample Temperature'), self.dm.getLatestValue('Target Temperature')
+        self.stabilizeTemperature(setTemperature=2*targetT-sampleT, rampRate=0, stabilizationTime=60, stabilizationMargin=self.preferences['TcStabilizationMargin'], vb=True)
+
         if self.acquiring:
             if stopT > startT:
                 self.hm.rampTemperature(95, rampRate, ramping=True)
             else:
                 self.hm.rampTemperature(10, rampRate, ramping=True)
         try:
-            while (self.acquiring & (numpy.abs(sampleT - stopT) > 0.3)):
+            while (self.acquiring & (numpy.abs(sampleT - stopT) > 0.1)):
                 sampleT, targetT, spareT, holderT = self.dm.getLatestValue('Sample Temperature'), self.dm.getLatestValue('Target Temperature'), self.dm.getLatestValue('Spare Temperature'), self.dm.getLatestValue('Holder Temperature')
                 
                 self.hm.setSmallCurrent(transportCurrent)
@@ -189,6 +199,7 @@ class TaskManager(QObject):
                 tc, _ = self.dm.fitTcMeasurement(tData[3], tData[4], tag)
                 
         except Exception as e:
+            self.log_signal.emit('ExceptionRaised', 'Taskmanager::measureTc raised: {}'.format(e))
             print('Taskmanager::measureTc raised:', e)
 
         finally:
@@ -232,6 +243,7 @@ class TaskManager(QObject):
             while(self.acquiring and (abs(v) < maxV) and (iRequest < self.maxI) and (control_voltage != numpy.nan)):
                 
                 control_voltage = self.hm.setLargeCurrent(iRequest, currentSource=currentSource, vb=vb)
+                time.sleep(.3)
                 sampleT, targetT, holderT, spareT = self.dm.getLatestValue('Sample Temperature'), self.dm.getLatestValue('Target Temperature'), self.dm.getLatestValue('Holder Temperature'), self.dm.getLatestValue('Spare Temperature')
                 v = self.hm.getVoltageReading()
                 i = self.hm.getCurrentReading(useDMM=self.useDMM)

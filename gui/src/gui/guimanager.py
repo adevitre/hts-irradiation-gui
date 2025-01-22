@@ -22,6 +22,7 @@ from task import Task
 from Tab_VoltageCurrent import Tab_VoltageCurrent
 from Tab_VoltageTemperature import Tab_VoltageTemperature
 from Tab_VoltageTime import Tab_VoltageTime
+from Tab_TemperatureAnalysis import Tab_TemperatureAnalysis
 from Tab_Signals import Tab_Signals
 from Tab_Sequences import Tab_Sequences
 from Tab_Login import Tab_Login
@@ -56,7 +57,7 @@ class GUIManager(QMainWindow):
         self.styles = load_json(fname='styles.json', location=os.getcwd()+'/config')  # stylesheets for QtWidgets
         self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')  # software preferences
         
-        self.sessionStarted = False                              # if False, the GUI is in DEMO mode and data has not been acquired yet
+        self.sessionStarted = False  # if False, the GUI is in DEMO mode and data has not been acquired yet
         self.updatingPlots = False
 
         self.hm = HardwareManager()
@@ -80,7 +81,9 @@ class GUIManager(QMainWindow):
         self.myCentralWidget.setLayout(self.gridLayout)
         self.setCentralWidget(self.myCentralWidget)
         
-        # add tabs
+        #
+        # Setup the tabs used to control different aspects of the experiment.
+        #
         self.tabWidget = QTabWidget(self)
         self.tabWidget.setStyleSheet(self.styles['QTabWidget'])
 
@@ -89,25 +92,53 @@ class GUIManager(QMainWindow):
         self.missionControl.setStyleSheet(self.styles['QTabWidgetVertical'])
         self.missionControl.setTabPosition(QTabWidget.West)
 
-        self.logbookTools = Tab_Logbook(parent=self)
         self.loginTools = Tab_Login(parent=self)
+        self.logbookTools = Tab_Logbook(parent=self)
+        self.environmentTools = Tab_Signals(usr_preferences=self.preferences, parent=self)
+        self.deviceTools = Tab_Devices(parent=self)
+        
+        self.missionControl.addTab(self.environmentTools, 'Signals')
+        self.missionControl.addTab(self.logbookTools, "Logbook")
+        self.missionControl.addTab(self.loginTools, 'Session')
+        self.missionControl.setCurrentIndex(2)
+
+        # tabs in a tab for measurements
+        self.measurementTools = QTabWidget(self.tabWidget)
+        self.measurementTools.setStyleSheet(self.styles['QTabWidgetVertical'])
+        self.measurementTools.setTabPosition(QTabWidget.West)
+
         self.icTools = Tab_VoltageCurrent(parent=self)
         self.tcTools = Tab_VoltageTemperature(parent=self)
         self.vtTools = Tab_VoltageTime(parent=self)
-        self.environmentTools = Tab_Signals(usr_preferences=self.preferences, parent=self)
-        self.sequencesTools = Tab_Sequences(parent=self)
-        self.deviceTools = Tab_Devices(parent=self)
 
-        self.missionControl.addTab(self.loginTools, 'Session')
-        self.missionControl.addTab(self.logbookTools, "Logbook")
-        self.missionControl.addTab(self.deviceTools, 'Manuals')
-        self.tabWidget.addTab(self.missionControl, 'Mission Control')
-        self.tabWidget.addTab(self.environmentTools, "Signals")
-        self.tabWidget.addTab(self.icTools, "Voltage/Current")
-        self.tabWidget.addTab(self.tcTools, "Voltage/Temperature")
-        self.tabWidget.addTab(self.vtTools, "Voltage/Time")
-        self.tabWidget.addTab(self.sequencesTools, "Sequences")
+        self.measurementTools.addTab(self.icTools, "Voltage/Current")
+        self.measurementTools.addTab(self.tcTools, "Voltage/Temperature")
+        self.measurementTools.addTab(self.vtTools, "Voltage/Time")
+
+        # tabs in a tab for data analysis
+        self.analysisTools = QTabWidget(self.tabWidget)
+        self.analysisTools.setStyleSheet(self.styles['QTabWidgetVertical'])
+        self.analysisTools.setTabPosition(QTabWidget.West)
         
+        self.temperatureAnalysis = Tab_TemperatureAnalysis(parent=self)
+        self.fluenceAnalysis = Tab_VoltageCurrent(parent=self)
+        
+        self.analysisTools.addTab(self.temperatureAnalysis, "Temperature")
+        self.analysisTools.addTab(self.fluenceAnalysis, "Fluence")
+
+        # tabs for help
+        self.help = QTabWidget(self.tabWidget)
+        self.help.setStyleSheet(self.styles['QTabWidgetVertical'])
+        self.help.setTabPosition(QTabWidget.West)
+        self.help.addTab(self.deviceTools, 'Manuals')
+
+        # add vertical tab widgets to horizontal master tab widget
+        self.sequencesTools = Tab_Sequences(parent=self)
+        self.tabWidget.addTab(self.missionControl, 'Mission Control')
+        self.tabWidget.addTab(self.measurementTools, "Measurements")
+        self.tabWidget.addTab(self.analysisTools, "Analysis")
+        self.tabWidget.addTab(self.sequencesTools, "Sequences")
+        self.tabWidget.addTab(self.help, "Help")
         self.tabWidget.setCurrentIndex(0)
         
         self.sidebar = Sidebar()

@@ -23,13 +23,16 @@
       "stopbits": 1,
       "timeout": 1,
       "xonxoff": false,
-      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/FAST-PS-1K5 - User's Manual v2.3.pdf"
+      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/FAST-PS-1K5 - User's Manual v2.3.pdf",
+      "description": "The ideal current source for our work! (a little overpriced)"
+
     },
     "current_source_tdk": {
       "port": "/dev/ttyS11",
       "baudrate": 9600,
       "bytesize": 8,
       "ending": "\r",
+      "ethernet_port": "NA",
       "greeting": "ADR 4",
       "name": "TDK Current Source GEN6-100",
       "parity": "N",
@@ -37,13 +40,15 @@
       "stopbits": 1,
       "timeout": 1,
       "xonxoff": false,
-      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/tdk-lambda-gen6-100A-6V.pdf"
+      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/tdk-lambda-gen6-100A-6V.pdf",
+      "description": "A decent current source provided by Andre Chouinard"
     },
     "current_source_tc": {
-      "port": "/dev/ttyUSB1",
+      "port": "/dev/ttyUSB2",
       "baudrate": 57600,
       "bytesize": 7,
       "ending": "\r\n",
+      "ethernet_port": "NA",
       "greeting": "*IDN?",
       "name": "current source Tc",
       "parity": "O",
@@ -51,13 +56,15 @@
       "stopbits": 1,
       "timeout": 1,
       "xonxoff": false,
-      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/121_manual.pdf"
+      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/121_manual.pdf",
+      "description": "The Lakeshore 121 Current Source is used to measure the critical temperature (Tc) and performed critical current (Ic) measurements of heavily damaged tapes. In the future, it could also serve to produce the Hall current of a magnetic field sensor."
     },
     "nanovoltmeter": {
       "port": "/dev/ttyS6",
       "baudrate": 19200,
       "bytesize": 8,
       "ending": "\n",
+      "ethernet_port": "NA",
       "fresh_pattern": "[-+]?[0-9]\\.[0-9]*E[-+]?[0-9]*",
       "greeting": "*IDN?",
       "name": "nanovoltmeter",
@@ -66,7 +73,8 @@
       "stopbits": 1,
       "timeout": 1,
       "xonxoff": false,
-      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/NVM2182A.pdf"
+      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/NVM2182A.pdf",
+      "description": "The nanovoltmeter (Keithley 2182A) provides high precision (<0.1 uV) measurements of the superconductor voltage."
     },
     "pressure_monitor": {
       "port": "/dev/ttyS7",
@@ -74,6 +82,7 @@
       "baudrate": 57600,
       "bytesize": 8,
       "ending": "\r",
+      "ethernet_port": "NA",
       "greeting": "#hello",
       "ig3s_pattern": "\\*   [0,1] IG (ON|OFF)",
       "name": "pressure monitor",
@@ -82,10 +91,11 @@
       "stopbits": 1,
       "timeout": 1,
       "xonxoff": false,
-      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/flexrax4000.pdf"
+      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/flexrax4000.pdf",
+      "description": "The pressure monitor (Instrutech Flexrax 4000) measures the pressure of the chamber with a capacitance (1e-4 to 1e3 torr) and an ionization gauge (1e-8 to 1e-4 torr). A third capacitance gauge, not displayed in the GUI, shows the backing pressure."
     },
     "temperature_controller": {
-      "port": "/dev/ttyUSB0",
+      "port": "/dev/ttyUSB1",
       "aout_pattern": "[-+]?[0-9]*\\.[0-9]",
       "baudrate": 57600,
       "bytesize": 7,
@@ -102,13 +112,15 @@
       "stopbits": 1,
       "timeout": 2,
       "xonxoff": true,
-      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/336manual.pdf"
+      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/336manual.pdf",
+      "description": "The temperature controller is used to set the temperature of the system using any of the 4 inputs (typically B). It also sends a control voltage to a Sorensen DCS150-7E Voltage source which feeds a proportional power to the embedded carthridge heaters."
     },
     "voltagesource": {
-      "port": "/dev/ttyUSB2",
+      "port": "/dev/ttyUSB0",
       "baudrate": 9600,
       "bytesize": 8,
       "ending": "\n",
+      "ethernet_port": "NA",
       "greeting": "*IDN?",
       "name": "voltagesource",
       "parity": "N",
@@ -116,7 +128,8 @@
       "stopbits": 1,
       "timeout": 1,
       "xonxoff": false,
-      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/CS2231A.pdf"
+      "manual": "/home/htsirradiation/Documents/hts-irradiation-gui/manuals/CS2231A.pdf",
+      "description": "The voltage source is used to provide control voltage to the HP6260B Current Source. It can also be used to provide up to 6 A in steps of 0.001 A and above."
     }
   },
   "ports": [
