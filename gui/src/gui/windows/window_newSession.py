@@ -46,7 +46,7 @@ class NewSessionWindow(QWidget):
         
         # description
         self.QPlainTextEdit_description = QtWidgets.QPlainTextEdit(self)
-        self.QPlainTextEdit_description.insertPlainText("What experiments are you conducting today?")
+        self.QPlainTextEdit_description.setPlaceholderText('What experiments are you conducting today?')
         
         # description
         self.QCheckBox_saveTemperature = QtWidgets.QCheckBox('Save time trace of temperature', self)

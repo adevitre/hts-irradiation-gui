@@ -7,6 +7,7 @@ from relays import Relays
 from nanovoltmeter import NanoVoltmeter
 from dmm6500 import DMM6500
 from currentsourceCAEN import CurrentSourceCAEN
+from cs_tdk import CurrentSourceTDK
 from currentsource100A import CurrentSource100A
 from currentsource100mA import CurrentSource100mA
 from temperaturecontroller import TemperatureController
@@ -20,10 +21,8 @@ NANOVOLTMETER = 'Keithley 2182A Nanovoltmeter'
 MULTIMETER = 'Keithley DMM6500 Digital Multimeter'
 PRESSURE_CONTROLLER = 'Instrutech FlexRax 4000 Vacuum Gauge Controller'
 
-LABEL_CAEN = 'CAEN'
-LABEL_CS100A = 'HP6260B-120A'
-LABEL_CS006A = '2231A-30-3-6A'
-
+HARDWARE_PARAMETERS = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
+        
 class HardwareManager(QObject):
     
     log_signal = pyqtSignal(str, str)
@@ -31,19 +30,19 @@ class HardwareManager(QObject):
     def __init__(self, parent=None):
         self.tc, self.pm, self.nvm, self.dmm = None, None, None, None
         super(HardwareManager, self).__init__(parent)
-        hardwareParameters = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
         self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')
         
         self.vs = VoltageSource()
         self.csCAEN = CurrentSourceCAEN()
-        self.cs100A = CurrentSource100A(hardwareParameters["a"], hardwareParameters["b"], hardwareParameters["shuntR"], self.vs, self.csCAEN)
+        self.csTDK = None #CurrentSourceTDK()
+        self.cs100A = CurrentSource100A(HARDWARE_PARAMETERS["a"], HARDWARE_PARAMETERS["b"], HARDWARE_PARAMETERS["shuntR"], self.vs, self.csCAEN, self.csTDK)
         self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50))
         self.relays = Relays()
         
-        self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=False)
+        self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=True)
         self.pm = PressureMonitor(int(self.preferences["sampling_period_pm"]*1000-50))
         self.nvm = NanoVoltmeter(int(self.preferences["sampling_period_nv"]*1000-50))
-        self.dmm = DMM6500(hardwareParameters["shuntR"], int(self.preferences["sampling_period_nv"]*1000-50))
+        self.dmm = DMM6500(HARDWARE_PARAMETERS["shuntR"], int(self.preferences["sampling_period_nv"]*1000-50))
            
     def initializeHardware(self):
         self.relays.connectCurrentSource100mATo(device='hallSensor') # connect current source
@@ -89,8 +88,11 @@ class HardwareManager(QObject):
     def getVoltageReading(self, removeOffset=True):
         return self.nvm.measure(removeOffset)
     
-    def getCurrentReading(self):
-        current = self.dmm.measure()
+    def getCurrentReading(self, useDMM=True):
+        if useDMM:
+            current = self.dmm.measure()
+        else:
+            current = self.csCAEN.getCurrent()
         return current
     
     def getShuntResistance(self):
@@ -114,10 +116,10 @@ class HardwareManager(QObject):
     def setSmallCurrentPolarity(self, polarity=0):
         self.cs100mA.setPolarity(polarity)
         
-    def setSmallCurrent(self, current=-1):
+    def setSmallCurrent(self, current=0):
         self.cs100mA.setCurrent(current)
     
-    def setLargeCurrent(self, current=0, currentSource=LABEL_CS100A, calib=True, vb=False):
+    def setLargeCurrent(self, current=0, currentSource=HARDWARE_PARAMETERS['LABEL_CS100A'], calib=True, vb=False):
         if vb: self.log_signal.emit('CurrentSet', 'Power supply {} set by user to {:4.2f} A'.format(currentSource, current))
         return self.cs100A.setCurrent(current, currentSource, calib, vb=vb)
     
@@ -172,7 +174,7 @@ class HardwareManager(QObject):
             Calls function from relays, which connects the picoammeter (during irradiation) or the nanovoltmeter (during measurements) to the sample
             
             INPUTS:
-                device (str) 'picoammeter' or 'nanovoltameter'
+                device (str) 'picoammeter' or 'nanovoltmeter'
         '''
         self.relays.measureSampleWith(device)
 
@@ -207,9 +209,9 @@ class HardwareManager(QObject):
 
     def testSerialConnection(self, device=TEMPERATURE_CONTROLLER):
         if device == TEMPERATURE_CONTROLLER:
-            connected = self.tc.testSerialConnection()
+            connected = self.tc.testConnection()
         elif device == CURRENT_SOURCE:
-            connected = self.cs100mA.testSerialConnection()
+            connected = self.cs100mA.testConnection()
             if not connected:
                 print('fuser -k {}'.format(self.cs100mA.settings['port']))
             #connected = self.cs100mA.testSerialConnection()
@@ -233,3 +235,6 @@ class HardwareManager(QObject):
     def setVoltageSign(self, sign):
         self.nvm.setPolarity(sign)
         self.log_signal.emit('VoltageSign', 'Voltage sign switched to {} by user. Ic, Tc and Vt measurements will be affected.')
+
+    def resetQPS(self):
+        self.relays.resetQPS()

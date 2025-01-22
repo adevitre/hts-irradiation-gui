@@ -63,5 +63,6 @@ class MeasurePlot(PlotWidget):
             Clears the plots
         '''
         self.clear()
+        del self.lines
         self.lines = []
 

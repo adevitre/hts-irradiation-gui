@@ -1,13 +1,12 @@
 import numpy, re, time
-from serialdevice import SerialDevice
+from device import Device
 
 '''
     A SerialDevice class for communications with a LakeShore 121 current source.
-    
     @author Alexis Devitre devitre@mit.edu, David Fischer dafisch@mit.edu
     @lastModified 2023/07/27
 '''
-class CurrentSource100mA(SerialDevice):
+class CurrentSource100mA(Device):
     
     def __init__(self, waitLock=950):
         super().__init__('current_source_tc', waitLock=waitLock)
@@ -18,7 +17,7 @@ class CurrentSource100mA(SerialDevice):
     def initialize(self):
         self.write('DFLT')    # reset factory settings
         time.sleep(.4)
-        self.write('RANGE08')  # 1 mA, switch to RANGE13 for user defined current
+        self.write('RANGE13') #self.write('RANGE08')  # 1 mA, switch to RANGE13 for user defined current
         time.sleep(.4)
         self.write('IENBL 1') # closes the circuit and enables current to flow. An external relay was added because there was an issue having the live still connected to the load.
     '''
@@ -28,24 +27,20 @@ class CurrentSource100mA(SerialDevice):
         @inputs:
             value (str) - -001, +001, -100, +100 mA
     '''
-    def setCurrent(self, value=-1):
-        '''
-
-        if value < 0:
-            command="SETI-{:0>3}e-03".format(numpy.abs(value))
+    def setCurrent(self, value=0):
+        value *= 1e-3
+        if value > 0:
+            command="SETI +{:3.0e}".format(value)
         else:
-            command="SETI+{:0>3}e-03".format(numpy.abs(value))
+            command="SETI {:3.0e}".format(value)
         self.write(command)
-        time.sleep(.5) # takes < 300 ms for full-scale change in current (manual page 3)
+        time.sleep(.6) # takes < 300 ms for full-scale change in current (manual page 3)
 
-        '''
-        print('tried to set mA current')
-
-        '''
-        Change the polarity of the current output.
-        
-        @inputs:
-            polarity (int) - 0, 1
+    '''
+    Change the polarity of the current output.
+    
+    @inputs:
+        polarity (int) - 0, 1
     '''
     def setPolarity(self, polarity=0):
         self.write("IPOL {}".format(polarity))

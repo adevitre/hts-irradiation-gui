@@ -1,0 +1,159 @@
+viewing error messages
+
+after restarting computer
+
+/home/htsirradiation/Documents/hts-irradiation-gui/gui/gui/config
+voltagesource __init__() raised  [Errno 2] could not open port /dev/ttyUSB2: [Errno 2] No such file or directory: '/dev/ttyUSB2'
+WARNING: port /dev/ttyUSB2 was not connected
+192.168.0.10: CEAN Current Source FAST-IK5-100-15 connected!
+WARNING: /dev/ttyS6 is connected to a device which is not TDK Current Source GEN6-100
+/dev/ttyUSB1: current source Tc connected!
+WARNING: /dev/ttyUSB0 is connected to a device which is not temperature controller
+/dev/ttyS7: pressure monitor connected!
+WARNING: /dev/ttyS4 is connected to a device which is not nanovoltmeter
+DMM6500 connected!
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+Nanovoltmeter::measure received string with incorrect format
+Value returned by :sense:data:fresh? is  
+Exception raised in setOffset: 'NanoVoltmeter' object has no attribute 'polarity'
+<class 'list'> []
+/home/htsirradiation/anaconda3/lib/python3.9/site-packages/numpy/lib/nanfunctions.py:1670: RuntimeWarning: Degrees of freedom <= 0 for slice.
+  var = nanvar(a, axis=axis, dtype=dtype, out=out, ddof=ddof,
+/home/htsirradiation/Documents/hts-irradiation-gui/gui/src/devices/nanovoltmeter.py:79: RuntimeWarning: Mean of empty slice
+  mean = numpy.nanmean(voltages)
+/home/htsirradiation/Documents/hts-irradiation-gui/gui/src/devices/nanovoltmeter.py:80: RuntimeWarning: Mean of empty slice
+  self.offset = numpy.nanmean(voltages[((mean - std) < voltages) & (voltages < (mean+std))]) # prevents abnormal offsets due to large fluctuations
+Traceback (most recent call last):
+  File "/home/htsirradiation/Documents/hts-irradiation-gui/gui/main.py", line 27, in <module>
+    ui = GUIManager()                # create the GUI
+  File "/home/htsirradiation/Documents/hts-irradiation-gui/gui/src/gui/guimanager.py", line 155, in __init__
+    self.hm.initializeHardware()
+  File "/home/htsirradiation/Documents/hts-irradiation-gui/gui/src/hardwaremanager.py", line 51, in initializeHardware
+    self.setVoltageOffset()
+  File "/home/htsirradiation/Documents/hts-irradiation-gui/gui/src/hardwaremanager.py", line 114, in setVoltageOffset
+    return self.nvm.setOffset()
+  File "/home/htsirradiation/Documents/hts-irradiation-gui/gui/src/devices/nanovoltmeter.py", line 83, in setOffset
+    return self.offset*self.polarity
+AttributeError: 'NanoVoltmeter' object has no attribute 'polarity'
+
+
+
+after changing voltage source to S5 and power cycling the NVM (note NVM connected after this)
+
+/home/htsirradiation/Documents/hts-irradiation-gui/gui/gui/config
+WARNING: /dev/ttyS5 is connected to a device which is not voltagesource
+192.168.0.10: CEAN Current Source FAST-IK5-100-15 connected!
+WARNING: /dev/ttyS6 is connected to a device which is not TDK Current Source GEN6-100
+/dev/ttyUSB1: current source Tc connected!
+WARNING: /dev/ttyUSB0 is connected to a device which is not temperature controller
+/dev/ttyS7: pressure monitor connected!
+/dev/ttyS4: nanovoltmeter connected!
+DMM6500 connected!
+TemperatureController::getOutmode raised:  list index out of range
+libGL error: MESA-LOADER: failed to open nouveau: /usr/lib/dri/nouveau_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
+libGL error: failed to load driver: nouveau
+libGL error: MESA-LOADER: failed to open nouveau: /usr/lib/dri/nouveau_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
+libGL error: failed to load driver: nouveau
+libGL error: MESA-LOADER: failed to open swrast: /usr/lib/dri/swrast_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
+libGL error: failed to load driver: swrast
+Datamanager::saveEnvironmentData raised:  'NoneType' object has no attribute 'assign'
+Deleted temperature controller!
+Program ended by user
+
+
+after changing temp controller to S0
+
+/home/htsirradiation/Documents/hts-irradiation-gui/gui/gui/config
+WARNING: /dev/ttyS5 is connected to a device which is not voltagesource
+192.168.0.10: CEAN Current Source FAST-IK5-100-15 connected!
+WARNING: /dev/ttyS6 is connected to a device which is not TDK Current Source GEN6-100
+/dev/ttyUSB1: current source Tc connected!
+WARNING: /dev/ttyUSB0 is connected to a device which is not temperature controller
+/dev/ttyS7: pressure monitor connected!
+/dev/ttyS4: nanovoltmeter connected!
+DMM6500 connected!
+TemperatureController::getOutmode raised:  list index out of range
+libGL error: MESA-LOADER: failed to open nouveau: /usr/lib/dri/nouveau_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
+libGL error: failed to load driver: nouveau
+libGL error: MESA-LOADER: failed to open nouveau: /usr/lib/dri/nouveau_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
+libGL error: failed to load driver: nouveau
+libGL error: MESA-LOADER: failed to open swrast: /usr/lib/dri/swrast_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/x86_64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
+libGL error: failed to load driver: swrast
+Datamanager::saveEnvironmentData raised:  'NoneType' object has no attribute 'assign'
+Deleted temperature controller!
+Program ended by user

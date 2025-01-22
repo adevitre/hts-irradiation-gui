@@ -2,8 +2,6 @@ from configure import load_json
 import os, re, serial, socket
 from PyQt5.QtCore import QMutex
 
-LATEST_CONFIG_LOCATION = '/home/htsirradiation/Documents/hts-irradiation-gui/config/' #os.getcwd()+'/config'
-
 '''
     A generic class for reading data and sending commands with hardware devices.
     
@@ -20,7 +18,7 @@ class Device:
         self.waitLock = waitLock
         self.ser, self.serialDevice = None, serialDevice
         self.mutex = QMutex()
-        self.settings = load_json('hwparams.json', location=LATEST_CONFIG_LOCATION)['devices'][device]
+        self.settings = load_json('hwparams.json', location=os.getcwd()+'/config')['devices'][device]
 
         if self.serialDevice:
             try:
@@ -36,9 +34,10 @@ class Device:
                 self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)     # TCP
                 self.ser.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 self.ser.connect((self.settings['ip'], self.settings['ethernet_port']))
+                self.closeSocket()
                 if not self.testConnection(vb=True):
-                    self.ser.close()
                     self.ser = None
+
             except Exception as e:
                 print('{} __init__() raised '.format(self.settings['name']), e)
                 print('WARNING: socket could not connect to {}'.format(self.settings['ip']))
@@ -59,10 +58,19 @@ class Device:
         response = self.read(self.settings['greeting'])
         if (re.search(self.settings['response'], response)):
             self.connected = True
-            if vb: print(self.settings['port'] + ': {} connected!'.format(self.settings['name']))
+            if vb: 
+                if self.serialDevice:
+                    print(self.settings['port'] + ': {} connected!'.format(self.settings['name']))
+                else:
+                    print(self.settings['ip'] + ': {} connected!'.format(self.settings['name']))
         else:
             self.connected = False
-            if vb: print('WARNING: port {} is connected to a device which is not {}'.format(self.settings['port'], self.settings['name']))
+            if vb:
+                if self.serialDevice:
+                    print('WARNING: {} is connected to a device which is not {}'.format(self.settings['port'], self.settings['name']))
+                else:
+                    print('WARNING: {} is connected to a device which is not {}'.format(self.settings['ip'], self.settings['name']))
+                
         return self.connected
 
     '''
@@ -77,7 +85,9 @@ class Device:
                 if self.serialDevice:
                     self.ser.write(bytes(command + self.settings['ending'],'utf-8'))
                 else:
+                    self.openSocket()
                     self.ser.sendall(bytes(command+self.settings['ending'], 'utf-8'))
+                    self.closeSocket()
         except Exception as e:
             print("{} {}".format(self.settings['name'], e))
         finally:
@@ -94,25 +104,35 @@ class Device:
     def read(self, command):
         response = ''
         if self.mutex.tryLock(self.waitLock):
-                try:
-                    if self.ser is not None:
-                        if self.serialDevice:
-                            self.ser.write(bytes(command + self.settings['ending'],'utf-8'))
-                            response = self.ser.readline().decode('utf-8').strip()
-                        else:
-                            self.ser.sendall((command+self.settings['ending']).encode())
-                            response, listening = '', True
-                            while listening:
-                                response += self.ser.recv(2048).decode()
-                                if response.endswith(self.settings['ending']):
-                                    response = response.strip()
-                                    listening = False
-                except Exception as e:
-                    print('While reading {} from {}, SerialDevice:read raised:'.format(command, self.settings['name']), e)
-                    response = ''
-                finally:
-                    self.mutex.unlock()
-                    #pass
+            try:
+                if self.ser is not None:
+                    if self.serialDevice:
+                        self.ser.write(bytes(command + self.settings['ending'],'utf-8'))
+                        response = self.ser.readline().decode('utf-8').strip()
+                    else:
+                        self.openSocket()
+                        self.ser.sendall((command+self.settings['ending']).encode())
+                        response, listening = '', True
+                        while listening:
+                            response += self.ser.recv(128).decode()
+                            if self.settings['ending'] in response:
+                                response = response.strip()
+                                listening = False
+                        self.closeSocket()
+            except Exception as e:
+                print('While reading {} from {}, SerialDevice:read raised:'.format(command, self.settings['name']), e)
+                response = ''
+            finally:
+                self.mutex.unlock()
+                #pass
         else:
             print('{} not locking while attempting {}'.format(self.settings['name'], command))
         return response
+    
+    def openSocket(self):
+        self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)     # TCP
+        self.ser.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.ser.connect((self.settings['ip'], self.settings['ethernet_port']))
+    
+    def closeSocket(self):
+        self.ser.close()

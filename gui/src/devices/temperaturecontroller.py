@@ -1,5 +1,4 @@
 import numpy, time, re
-from serialdevice import SerialDevice
 from device import Device
 '''
     A SerialDevice class for communications with a Lakeshore 336 temperature controller.
@@ -9,7 +8,7 @@ from device import Device
 class TemperatureController(Device):
     
     def __init__(self, waitLock=950, serialDevice=True):
-        super().__init__('temperature_controller', waitLock=waitLock, serialDevice=True)
+        super().__init__('temperature_controller', waitLock=waitLock, serialDevice=serialDevice)
         self.write('TLIMIT B,320')
         self.rampTemperature(rate=3, ramping=False)
         self.setHeaterOutput(on=True)
@@ -73,7 +72,7 @@ class TemperatureController(Device):
         try:
             r = self.read('AOUT? 3') # heaterVoltagePercent
             if re.fullmatch(self.settings["aout_pattern"], r) is not None:
-                power = (120.*float(r)/100.)**2/32.5 # R_eff = 30 Ohm, V_lim = 120 V
+                power = (120.*float(r)/100.)**2/36 # R_eff = 36 Ohm, V_lim = 120 V
         except Exception as e:
             print('TemperatureController::getHeatingPower raised:', e)
             print('Value returned by AOUT? 3 is ', r)
