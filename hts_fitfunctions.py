@@ -21,10 +21,6 @@ def cubic2(x, a, b, c):
 def poly5(x, a, b, c, d, e):
     return a*x**4+b*x**3+c*x**2+d*x+e
 
-   
-def sqrt(x, a=0.69975365, b=0.75392883, c=0.13455914, d=-0.01259732):
-    return a*np.sqrt(c*x+d)+b
-
 def inverse(x, a, b, c, d):
     return b+a/(c*x+d)
 
