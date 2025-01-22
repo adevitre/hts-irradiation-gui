@@ -5,6 +5,8 @@
     @modified 2024/09/03
     
 '''
+import hts_misc
+import hts_fitfunctions as ff
 from scipy import integrate, constants
 from scipy.optimize import curve_fit
 import ipywidgets as widgets
