@@ -1,5 +1,6 @@
 import sys, os, shutil
 
+sys.path.append(os.getcwd())
 sys.path.append(os.getcwd()+'/config')
 sys.path.append(os.getcwd()+'/src')
 sys.path.append(os.getcwd()+'/src/devices')

@@ -7,14 +7,18 @@
 '''
 import hts_misc
 import hts_fitfunctions as ff
+from scipy import integrate, constants
+from scipy.optimize import curve_fit
+import ipywidgets as widgets
 
 import numpy as np
 import matplotlib.pyplot as plt
 import platform
 import seaborn as sns
 import pandas as pd
-from scipy import integrate, constants
-from scipy.optimize import curve_fit
+
+import hts_misc
+import hts_fitfunctions as ff
 
 plt.rcParams['axes.titlesize'] = 20
 plt.rcParams['axes.labelsize'] = 20
