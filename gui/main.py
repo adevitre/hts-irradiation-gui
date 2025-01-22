@@ -1,5 +1,4 @@
 import sys, os, shutil
-print(os.getcwd()+'/gui/config')
 
 sys.path.append(os.getcwd()+'/config')
 sys.path.append(os.getcwd()+'/src')

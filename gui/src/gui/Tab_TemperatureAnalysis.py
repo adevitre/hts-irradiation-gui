@@ -50,6 +50,9 @@ class Tab_TemperatureAnalysis(QWidget):
         gridLayout.addWidget(self.plottingArea, 0, 1, 9, 9)
 
     def overplot(self):
+        '''
+        
+        '''
         filepaths = QFileDialog.getOpenFileNames(self, 'Select IV curves to process', self.parent.dm.save_directory+'/Ic')[0]
         for path in filepaths:
             try:
@@ -57,7 +60,7 @@ class Tab_TemperatureAnalysis(QWidget):
                 i, v = numpy.genfromtxt((line  for line  in open(path, 'rb') if line[0] != '#'), usecols=[2, 3], unpack=True)
                 if v[numpy.argmax(numpy.abs(v))] < 0:
                     v *= -1 # fix for data where sample was reverse biased.
-                    
+
                 with open(path) as f:
                     fit_parameters = f.readline().split()
                     ic, n, temp, tag = float(fit_parameters[3]), float(fit_parameters[7]), float(fit_parameters[-3]), fit_parameters[-1]
