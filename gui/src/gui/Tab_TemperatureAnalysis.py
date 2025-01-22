@@ -1,4 +1,6 @@
 import os, sys, numpy, time, re, datetime, pyqtgraph
+sys.path.append('../')
+import hts_fitting as hts
 
 from configure import load_json
 from plottingArea import MeasurePlot
@@ -52,11 +54,11 @@ class Tab_TemperatureAnalysis(QWidget):
         '''
         
         '''
-        #filepaths = QFileDialog.getOpenFileNames(self, 'Select IV curves to process', self.parent.dm.save_directory+'/Ic')[0]
-        #data = getIcT(filepaths)[2]
-        #for index, row in data.iterrows():
-        #    pen = pyqtgraph.mkPen(color=(int(numpy.random.rand()*255), int(numpy.random.rand()*255), int(numpy.random.rand()*255)), width=3, symbol='+', symbolSize=5)
-        #    self.plottingArea.plotData(row.sampleT, row.ic, name='{}'.format(row.fname), pen=pen)
+        filepaths = QFileDialog.getOpenFileNames(self, 'Select IV curves to process', self.parent.dm.save_directory+'/Ic')[0]
+        data = getIcT(filepaths)[2]
+        for index, row in data.iterrows():
+            pen = pyqtgraph.mkPen(color=(int(numpy.random.rand()*255), int(numpy.random.rand()*255), int(numpy.random.rand()*255)), width=3, symbol='+', symbolSize=5)
+            self.plottingArea.plotData(row.sampleT, row.ic, name='{}'.format(row.fname), pen=pen)
 
     def clearPlot(self):
         self.plottingArea.clear()
