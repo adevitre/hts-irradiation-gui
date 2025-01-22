@@ -350,13 +350,17 @@ def fitIcMeasurement(fpath, fformat='mit', vc=.2e-6, function='powerLaw', vThres
         # Fit with linear function in loglog, because the powerlaw needs initial estimate
         data = readIV(fpath, fformat=fformat, logIV=True, maxV=vMax, iMin=iMin, vThreshold=vThreshold, vb=vb)
         popt, pcov, chisq = fitIV(data.current, data.voltage, vc=vc, function='linear', vb=vb)
+
         n, ic = popt[0], vc**(1./popt[0]) / np.exp(popt[1]/popt[0])
         current, voltage = np.exp(data.current), np.exp(data.voltage) # always return current and voltage in linear space
         
         if function == 'powerLaw': # fit with power law if required
+
             data = readIV(fpath, fformat=fformat, logIV=False, maxV=vMax, iMin=iMin, vThreshold=vThreshold, vb=vb)
             popt, pcov, chisq = fitIV(data.current, data.voltage, vc=vc, function='powerLaw', p0=[ic, n], vb=vb)
+
             current, voltage = data.current, data.voltage
+
             ic, n = popt[0], popt[1]
             
         if ((ic < 0) | (n < 1)):
@@ -364,7 +368,7 @@ def fitIcMeasurement(fpath, fformat='mit', vc=.2e-6, function='powerLaw', vThres
             
     except Exception as e: # Usually TypeError, IndexError
         if vb: print('fittingFuntions:fitIV returned: ', e)
-    
+
     return ic, n, current, voltage, chisq, pcov
     
     

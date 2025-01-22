@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from ipywidgets import IntProgress, IntText
 from scipy.optimize import curve_fit, brentq
 
-def getEmpiricalTcDegradation(x, a, b, c, d):
+def getEmpiricalTcDegradation(x, a=0.69975365, b=0.75392883, c=0.13455914, d=0.01259732):
     '''
         This function is an empirical fit to Tc degradation as a function of Tc degradation
         It is used to interpolate Tc degradation values. The default values were obtained 
