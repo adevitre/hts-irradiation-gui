@@ -22,7 +22,8 @@ from task import Task
 from Tab_VoltageCurrent import Tab_VoltageCurrent
 from Tab_VoltageTemperature import Tab_VoltageTemperature
 from Tab_VoltageTime import Tab_VoltageTime
-from Tab_TemperatureAnalysis import Tab_TemperatureAnalysis
+from Tab_AnalysisTemperature import Tab_AnalysisTemperature
+from Tab_AnalysisFluence import Tab_AnalysisFluence
 from Tab_Signals import Tab_Signals
 from Tab_Sequences import Tab_Sequences
 from Tab_Login import Tab_Login
@@ -120,17 +121,11 @@ class GUIManager(QMainWindow):
         self.analysisTools.setStyleSheet(self.styles['QTabWidgetVertical'])
         self.analysisTools.setTabPosition(QTabWidget.West)
         
-        self.temperatureAnalysis = Tab_TemperatureAnalysis(parent=self)
-        self.fluenceAnalysis = Tab_VoltageCurrent(parent=self)
+        self.temperatureAnalysis = Tab_AnalysisTemperature(parent=self)
+        self.fluenceAnalysis = Tab_AnalysisFluence(parent=self)
         
         self.analysisTools.addTab(self.temperatureAnalysis, "Temperature")
         self.analysisTools.addTab(self.fluenceAnalysis, "Fluence")
-
-        # tabs for help
-        self.help = QTabWidget(self.tabWidget)
-        self.help.setStyleSheet(self.styles['QTabWidgetVertical'])
-        self.help.setTabPosition(QTabWidget.West)
-        self.help.addTab(self.deviceTools, 'Manuals')
 
         # add vertical tab widgets to horizontal master tab widget
         self.sequencesTools = Tab_Sequences(parent=self)
@@ -138,7 +133,7 @@ class GUIManager(QMainWindow):
         self.tabWidget.addTab(self.measurementTools, "Measurements")
         self.tabWidget.addTab(self.analysisTools, "Analysis")
         self.tabWidget.addTab(self.sequencesTools, "Sequences")
-        self.tabWidget.addTab(self.help, "Help")
+        self.tabWidget.addTab(self.deviceTools, "Help")
         self.tabWidget.setCurrentIndex(0)
         
         self.sidebar = Sidebar()
@@ -154,6 +149,7 @@ class GUIManager(QMainWindow):
 
         self.loginTools.signal_newsession.connect(self.startSession)
         self.loginTools.signal_stopsession.connect(self.stopSession)
+        self.loginTools.setvoltagesign_signal.connect(self.setVoltageSign)
         
         self.icTools.measure_signal.connect(self.measureIc)
         self.icTools.updatePlot_signal.connect(self.updateIcPlot)
@@ -172,9 +168,8 @@ class GUIManager(QMainWindow):
         self.sidebar.targetlight_signal.connect(self.toggleTargetLight)
         self.sidebar.chamberlight_signal.connect(self.toggleChamberLight)
         self.sequencesTools.run_sequence_signal.connect(self.runSequence)
-        self.logbookTools.setvoltagesign_signal.connect(self.setVoltageSign)
         self.logbookTools.log_signal.connect(self.log_event)
-        self.logbookTools.test_signal.connect(self.testSerialConnection)
+        self.deviceTools.test_signal.connect(self.testSerialConnection)
         self.logbookTools.reset_signal.connect(self.resetQPS)
         self.sidebar.settemp_signal.connect(self.setTemperature)
         self.sidebar.faradaycup_signal.connect(self.insertFaradayCup)
@@ -374,9 +369,9 @@ class GUIManager(QMainWindow):
         elif(what == 'SerialStatus'):
             device, status = comment.split('~')
             if status == 'True':
-                self.logbookTools.displaySerialDeviceStatus(device, True)
+                self.deviceTools.displaySerialDeviceStatus(device, True)
             else:
-                self.logbookTools.displaySerialDeviceStatus(device, False)
+                self.deviceTools.displaySerialDeviceStatus(device, False)
        
     @pyqtSlot(str)
     def testSerialConnection(self, device):

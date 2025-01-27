@@ -22,8 +22,9 @@ HARDWARE_PARAMETERS = load_json(fname='hwparams.json', location=os.getcwd()+'/co
 class Tab_Login(QWidget):
     
     signal_newsession = pyqtSignal(str, str, bool, bool, bool)
+    setvoltagesign_signal = pyqtSignal(int)
     signal_stopsession = pyqtSignal()
-
+    
     def __init__(self, parent=None, default_directory='/home/htsirradiation/Documents/data'):
         
         super(Tab_Login, self).__init__(parent)
@@ -62,7 +63,9 @@ class Tab_Login(QWidget):
         self.QCheckBox_savePressure.setChecked(True)
         self.QCheckBox_ln2Mode = QtWidgets.QCheckBox('LN2 mode', self)
         self.QCheckBox_ln2Mode.clicked.connect(lambda: self.QCheckBox_ln2Mode_Clicked())
-        
+        self.checkboxSetVoltageSign = QtWidgets.QCheckBox('Reverse voltage sign?', self)
+        self.checkboxSetVoltageSign.clicked.connect(self.checkBoxSetVoltageSign_clicked)
+
         self.QPushButtonStart = QtWidgets.QPushButton(self)
         self.QPushButtonStart.setText("Start Session...")
         self.QPushButtonStart.setStyleSheet(self.styles['QPushButton_idle'])
@@ -96,6 +99,7 @@ class Tab_Login(QWidget):
         hLayout.addWidget(self.QCheckBox_saveTemperature)
         hLayout.addWidget(self.QCheckBox_savePressure)
         hLayout.addWidget(self.QCheckBox_ln2Mode)
+        hLayout.addWidget(self.checkboxSetVoltageSign)
         hLayout.addStretch()
         vLayout.addLayout(hLayout)
 
@@ -141,6 +145,9 @@ class Tab_Login(QWidget):
         if self.QCheckBox_ln2Mode.isChecked():
             self.QCheckBox_saveTemperature.setChecked(False)
             self.QCheckBox_savePressure.setChecked(False)
+        else:
+            self.QCheckBox_saveTemperature.setChecked(True)
+            self.QCheckBox_savePressure.setChecked(True)
 
     def enable(self, enabled=True):
         self.QPushButton_folderName.setEnabled(enabled)
@@ -149,4 +156,10 @@ class Tab_Login(QWidget):
         self.QCheckBox_savePressure.setEnabled(enabled)
         self.QCheckBox_saveTemperature.setEnabled(enabled)
         self.QLineEdit_folderName.setEnabled(enabled)
-        
+        self.checkboxSetVoltageSign.setEnabled(enabled)
+
+    def checkBoxSetVoltageSign_clicked(self):
+        if self.checkboxSetVoltageSign.isChecked():
+            self.setvoltagesign_signal.emit(-1)
+        else:
+            self.setvoltagesign_signal.emit(1)

@@ -48,10 +48,10 @@ class MeasurePlot(PlotWidget):
         y = powerLaw(x, fitParameters[0], fitParameters[1])*1e6
         self.plot(x, y, pen=pen)
 
-    def plotInfiniteLine(self, pos, angle, label, **kwargs):
-        newLine = InfiniteLine(pos=pos, angle=angle, movable=False, pen=mkPen('g', width=4))
-        text = TextItem(label)#, anchor=(pos[0]+0.1, pos[1]+0.1))
-        self.addItem(newLine, ignoreBounds=True)
+    def plotInfiniteLine(self, pos, angle, label, pen=mkPen('b', width=4), **kwargs):
+        newLine = InfiniteLine(pos=pos, angle=angle, movable=False, pen=pen)
+        text = TextItem(label, color=pen.color())#, anchor=(pos[0]+0.1, pos[1]+0.1))
+        self.addItem(newLine)#, ignoreBounds=True)
         self.addItem(text)
         text.setPos(pos[0]+0.001, pos[1]+0.001)
         self.setXRange(0, 1)

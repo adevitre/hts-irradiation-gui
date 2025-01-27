@@ -55,8 +55,7 @@ class Sidebar(QWidget):
         self.labelTargetTemperature = QRadioButton(self)
         self.labelHolderTemperature = QRadioButton(self)
         self.labelSpareTemperature = QRadioButton(self)
-        self.labelShorcuts = QLabel(self)
-
+        
         self.labelHeaterPower.setStyleSheet('color: black; font-size: 20px;')
         self.labelPressure.setStyleSheet('color: forestgreen; font-size: 20px;')
 
@@ -64,8 +63,7 @@ class Sidebar(QWidget):
         self.labelTargetTemperature.setStyleSheet('QRadioButton {background-color: rgba(255, 255, 255, 0); color: red; font-size: 20px}')
         self.labelHolderTemperature.setStyleSheet('QRadioButton {background-color: rgba(255, 255, 255, 0); color: forestgreen; font-size: 20px}')
         self.labelSpareTemperature.setStyleSheet('QRadioButton {background-color: rgba(255, 255, 255, 0); color: purple; font-size: 20px}')
-        self.labelShorcuts.setStyleSheet('color: black; font-size: 15px;')
-
+        
         self.selectPIDSensorGroup = QButtonGroup()
         self.selectPIDSensorGroup.buttonClicked.connect(lambda: self.setPIDSensor())
         self.selectPIDSensorGroup.setExclusive(True)
@@ -139,8 +137,6 @@ class Sidebar(QWidget):
         self.comboBoxSetTurboValve.activated.connect(self.comboBoxSetTurboValve_activated)
         self.comboBoxSetTurboValve.setEnabled(True)
         
-        self.labelShorcuts.setText('Shortcut list\n\n{: <30}\t{: <30}\n{: <30}\t{: <30}\n{: <30}\t{: <30}'.format('Ctrl+L', 'Add a note to the log', 'Ctrl+C', 'Calibrate 100 A current source', 'Ctrl(+Shift)+Tab', 'Switch tabs'))
-
         horizontalLayout = QHBoxLayout()
         horizontalLayout.addWidget(self.QDoubleSpinBox_setTemperature)
         horizontalLayout.addWidget(self.pushButtonSetTemperature)
@@ -174,10 +170,6 @@ class Sidebar(QWidget):
         horizontalLayout3.addWidget(self.comboBoxSetTurboValve)
         horizontalLayout3.addStretch()
         verticalLayoutSideBar.addLayout(horizontalLayout3)
-
-        verticalLayoutSideBar.addStretch()
-        verticalLayoutSideBar.addWidget(HorizontalLine())
-        verticalLayoutSideBar.addWidget(self.labelShorcuts)
         
         self.setLayout(verticalLayoutSideBar)
         

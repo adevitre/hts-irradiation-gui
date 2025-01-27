@@ -30,32 +30,6 @@ class DMM6500:
                 print('DMM6500 is not configured. The following line must be added to /etc/udev/rules.d/usbtmc.rules :\n SUBSYSTEMS=="usb", ACTION=="add", ATTRS{idVendor}=="05e6", ATTRS{idProduct}=="6$')
             else:
                 print(e)
-                
-    def initialize(self):
-        pass
-        '''
-        print('created')
-        self.ser.ask('*RST?')
-        print('Rst')
-        self.ser.ask(':SENS:FUNC "VOLT:DC?"')
-        print('VoltDc')
-        self.ser.ask(':SENS:VOLT:RANG 10?')
-        print('Range')
-        self.ser.ask(':SENS:VOLT:INP AUTO')
-        print('INP')
-        self.ser.ask(':SENS:VOLT:NPLC 10')
-        print('NPLC')
-        self.ser.ask(':SENS:VOLT:AZER ON')
-        print('AZER ON')
-        self.ser.ask(':SENS:VOLT:AVER:TCON REP')
-        print('TCONREP')
-        self.ser.ask(':SENS:VOLT:AVER:COUN 100')
-        print('COUN100')
-        self.ser.ask(':SENS:VOLT:AVER:TCON REP')
-        print('TCONREP')
-        self.ser.ask(':SENS:VOLT:AVER ON')
-        print('averON')
-    '''
         
     '''
         Returns the status of the serial connection between hardware and software devices.

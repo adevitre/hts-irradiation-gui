@@ -20,6 +20,7 @@ POWER_SUPPLY = 'Keithley 2231-A-30-3 Power Supply'
 NANOVOLTMETER = 'Keithley 2182A Nanovoltmeter'
 MULTIMETER = 'Keithley DMM6500 Digital Multimeter'
 PRESSURE_CONTROLLER = 'Instrutech FlexRax 4000 Vacuum Gauge Controller'
+CURRENT_SOURCE_TDK = 'TDK Current Source GEN6-100'
 
 HARDWARE_PARAMETERS = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
         
@@ -207,23 +208,22 @@ class HardwareManager(QObject):
         self.relays.openGateValve(opened)
         self.log_signal.emit('GateValveToggle', 'Open = {}'.format(opened))
 
-    def testSerialConnection(self, device=TEMPERATURE_CONTROLLER):
-        if device == TEMPERATURE_CONTROLLER:
+    def testSerialConnection(self, device):
+        if device == HARDWARE_PARAMETERS['devices']['temperature_controller']['name']:
             connected = self.tc.testConnection()
-        elif device == CURRENT_SOURCE:
+        elif device == HARDWARE_PARAMETERS['devices']['current_source_tc']['name']:
             connected = self.cs100mA.testConnection()
-            if not connected:
-                print('fuser -k {}'.format(self.cs100mA.settings['port']))
-            #connected = self.cs100mA.testSerialConnection()
-
-        elif device == POWER_SUPPLY:
-            connected = self.vs.testSerialConnection()
-        elif device == NANOVOLTMETER:
-            connected = self.nvm.testSerialConnection()
-        elif device == MULTIMETER:
-            connected = self.dmm.testSerialConnection()
-        elif device == PRESSURE_CONTROLLER:
-            connected = self.pm.testSerialConnection()
+        elif device == HARDWARE_PARAMETERS['devices']['voltagesource']['name']:
+            connected = self.vs.testConnection()
+        elif device == HARDWARE_PARAMETERS['devices']['nanovoltmeter']['name']:
+            connected = self.nvm.testConnection()
+        elif device == HARDWARE_PARAMETERS['devices']['multimeter']['name']:
+            connected = self.dmm.testConnection()
+        elif device == HARDWARE_PARAMETERS['devices']['pressure_monitor']['name']:
+            connected = self.pm.testConnection()
+        else:
+            print('There is no implementation for testing the connection of this device')
+            connected = False
         self.log_signal.emit('SerialStatus', '{}~{}'.format(device, connected))
 
     def setTargetLight(self, on=False):
