@@ -7,22 +7,22 @@ from listwidget import ListWidget
 from progresslabel import ProgressLabel
 from fittingFunctions import powerLaw
 
-from PyQt5.QtWidgets import QWidget, QPushButton, QComboBox, QLabel, QGridLayout, QVBoxLayout, QDoubleSpinBox, QSpinBox, QFileDialog, QMessageBox, QInputDialog
+from PyQt5.QtWidgets import QWidget, QPushButton, QComboBox, QLabel, QGridLayout, QVBoxLayout, QDoubleSpinBox, QSpinBox, QFileDialog, QMessageBox, QInputDialog, QRadioButton, QButtonGroup
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import pyqtSignal, Qt, QTimer
 
 HARDWARE_PARAMETERS = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
 
-'''
-    Tab_VoltageTime is a submodule of the GUI containing GUI objects and functions needed 
-    to perform measurements of voltage at fixed transport current as a function of time.
-    @author Alexis Devitre (devitre@mit.edu)
-    @last-modified September 2024
-'''      
-class Tab_VoltageTime(QWidget):
     
+class Tab_VoltageTime(QWidget):
+    """
+        Tab_VoltageTime is a submodule of the GUI containing GUI objects and functions needed 
+        to perform measurements of voltage at fixed transport current as a function of time.
+        @author Alexis Devitre (devitre@mit.edu)
+        @last-modified Feb 2025
+    """
     setcurrent_signal = pyqtSignal(float, str)
-    measure_signal = pyqtSignal(float, str, bool, str)
+    measure_signal = pyqtSignal(float, str, bool, bool, str)
     updatePlot_signal = pyqtSignal()
     log_signal = pyqtSignal(str, str)
     
@@ -50,8 +50,19 @@ class Tab_VoltageTime(QWidget):
         self.QLabel_threshold.setText('Voltage limit [uV]')
         self.QLabel_currentSource.setText('Select current source')
 
+        self.qradiobutton_hall = QRadioButton('Measure Hall Sensor')
+        self.qradiobutton_tran = QRadioButton('Measure HTS Voltage')
+        
+        self.qradiobutton_hall.clicked.connect(self.switch_hall_tran)
+        self.qradiobutton_tran.clicked.connect(self.switch_hall_tran)
+
+        self.qradiobutton_tran.setChecked(True) # default selection is temperature
+        button_group = QButtonGroup()
+        button_group.addButton(self.qradiobutton_tran)
+        button_group.addButton(self.qradiobutton_tran)
+        
         self.comboBoxSelectCurrentSource = QComboBox(self)
-        self.comboBoxSelectCurrentSource.addItems([HARDWARE_PARAMETERS['LABEL_CS006A'], HARDWARE_PARAMETERS['LABEL_CAEN'], HARDWARE_PARAMETERS['LABEL_CS100A'], HARDWARE_PARAMETERS['LABEL_TDK']]) # WARNING: Changing these labels will affect the functionality of Ic measurements!
+        self.comboBoxSelectCurrentSource.addItems([HARDWARE_PARAMETERS['LABEL_CS006A'], HARDWARE_PARAMETERS['LABEL_CAEN'], HARDWARE_PARAMETERS['LABEL_CS100A'], HARDWARE_PARAMETERS['LABEL_TDK'], HARDWARE_PARAMETERS['LABEL_LS121']]) # WARNING: Changing these labels will affect the functionality of Ic measurements!
         self.comboBoxSelectCurrentSource.activated.connect(self.comboBoxSelectCurrentSource_activated)
         self.comboBoxSelectCurrentSource.setEnabled(True)
 
@@ -60,7 +71,7 @@ class Tab_VoltageTime(QWidget):
         self.QDoubleSpinBox_current.setValue(0.0)
         self.QDoubleSpinBox_current.setDecimals(3)
         self.QDoubleSpinBox_current.setSingleStep(.002)
-        self.QDoubleSpinBox_current.valueChanged.connect(lambda: self.setcurrent_signal.emit(self.QDoubleSpinBox_current.value(), self.comboBoxSelectCurrentSource.currentText()))
+        self.QDoubleSpinBox_current.valueChanged.connect(lambda: self.set_current())
         self.QDoubleSpinBox_current.setSingleStep(.1)
         self.QDoubleSpinBox_current.setEnabled(True)
         
@@ -89,6 +100,8 @@ class Tab_VoltageTime(QWidget):
         self.QPushButton_measure.setEnabled(False)
         
         verticalLayout = QVBoxLayout()
+        verticalLayout.addWidget(self.qradiobutton_tran)
+        verticalLayout.addWidget(self.qradiobutton_hall)
         verticalLayout.addStretch()
         verticalLayout.addWidget(self.QLabel_currentSource)
         verticalLayout.addWidget(self.comboBoxSelectCurrentSource)
@@ -105,7 +118,6 @@ class Tab_VoltageTime(QWidget):
         verticalLayout.addWidget(self.QPushButton_measure)
         verticalLayout.addWidget(self.QLabel_measureConfirm)
 
-        #gridLayout.addWidget(self.listWidget)
         gridLayout.addLayout(verticalLayout, 5, 0)
         gridLayout.addWidget(self.plottingArea, 0, 1, 9, 9)
 
@@ -120,19 +132,20 @@ class Tab_VoltageTime(QWidget):
                     tag = self.sessionTag + tag # done afterwards to avoid accumulating sessionTag in lastLabel
                     self.QPushButton_measure.setStyleSheet(self.styles['QPushButton_acquiring'])
                     self.QPushButton_measure.setText('Stop')
-                    self.QDoubleSpinBox_current.setEnabled(True)
+                    if self.qradiobutton_tran.isChecked(): # Hall probe has a fixed excitation current of 100 mA
+                        self.QDoubleSpinBox_current.setEnabled(True)
                     self.QLabel_measureConfirm.start()
                     self.plottingArea.addCurve(name=tag, color=(numpy.random.rand(), numpy.random.rand(), numpy.random.rand()))
                     self.QtimerUpdatePlot.start()
-                    self.measure_signal.emit(self.QDoubleSpinBox_threshold.value()*1e-6, self.comboBoxSelectCurrentSource.currentText(), False, tag)
+                    self.measure_signal.emit(self.QDoubleSpinBox_threshold.value()*1e-6, self.comboBoxSelectCurrentSource.currentText(), self.qradiobutton_hall.isChecked(), False, tag)
                 else:
                     QMessageBox.warning(self, 'Warning: invalid tag \"{}\"'.format(tag), 'Use only alphanumeric characters.')
         else:
-            self.measure_signal.emit(self.QDoubleSpinBox_threshold.value()*1e-6, 'None', True, 'stop')
+            self.measure_signal.emit(self.QDoubleSpinBox_threshold.value()*1e-6, 'None', False, True, 'stop')
             self.resetGUI()
     
     def comboBoxSelectCurrentSource_activated(self):
-        if self.comboBoxSelectCurrentSource.currentText() == HARDWARE_PARAMETERS['LABEL_CS100A']:
+        if (self.comboBoxSelectCurrentSource.currentText() == HARDWARE_PARAMETERS['LABEL_CS100A']) | (self.comboBoxSelectCurrentSource.currentText() == HARDWARE_PARAMETERS['LABEL_CAEN']):
             self.QDoubleSpinBox_current.setValue(0)
             self.QDoubleSpinBox_current.setDecimals(1)
             self.QDoubleSpinBox_current.setSingleStep(0.3)
@@ -143,8 +156,28 @@ class Tab_VoltageTime(QWidget):
             self.QDoubleSpinBox_current.setDecimals(3)
             self.QDoubleSpinBox_current.setSingleStep(0.001)
             self.QDoubleSpinBox_current.setRange(0.000, 5.9)
-            
+        
+        elif self.comboBoxSelectCurrentSource.currentText() == HARDWARE_PARAMETERS['LABEL_CS006A']:
+            self.QDoubleSpinBox_current.setValue(0)
+            self.QDoubleSpinBox_current.setDecimals(7)
+            self.QDoubleSpinBox_current.setSingleStep(0.0000001)
+            self.QDoubleSpinBox_current.setRange(0.0000001, 0.1)
+
+    def set_current(self):
+        """
+            set_current sets the ouput current from the selected current source
+        """
+        # Needed because the setCurrent methods in LS121 class takes mA
+        if self.comboBoxSelectCurrentSource.currentText() == HARDWARE_PARAMETERS['LABEL_LS121']:
+            self.setcurrent_signal.emit(1e3*self.QDoubleSpinBox_current.value(), self.comboBoxSelectCurrentSource.currentText())
+        else:
+            self.setcurrent_signal.emit(self.QDoubleSpinBox_current.value(), self.comboBoxSelectCurrentSource.currentText())
+        
+
     def overplot(self):
+        """
+            overplot adds a curve to the plot based on recorded data from a file, whose name should start with Vt_
+        """
         filepaths = QFileDialog.getOpenFileNames(self, 'Select Vt curves to add to plotting area', self.parent.dm.save_directory+'/Vt')[0]
 
         for path in filepaths:
@@ -191,3 +224,19 @@ class Tab_VoltageTime(QWidget):
         self.QPushButton_measure.setStyleSheet(self.styles['QPushButton_idle'])
         self.QPushButton_measure.clicked.disconnect()
         self.QPushButton_measure.clicked.connect(lambda: self.measure())
+
+    def switch_hall_tran(self):
+        if self.qradiobutton_hall.isChecked():
+            self.QDoubleSpinBox_current.setValue(0.1)
+            self.QDoubleSpinBox_threshold.setValue(0)
+            self.QDoubleSpinBox_current.setEnabled(False)
+            self.QDoubleSpinBox_threshold.setEnabled(False)
+            self.comboBoxSelectCurrentSource.setCurrentIndex([i for i in range(self.comboBoxSelectCurrentSource.count()) if self.comboBoxSelectCurrentSource.itemText(i) == HARDWARE_PARAMETERS['LABEL_LS121']][0])
+            self.comboBoxSelectCurrentSource.setEnabled(False)
+        else:
+            self.QDoubleSpinBox_current.setValue(0.1)
+            self.QDoubleSpinBox_threshold.setValue(0)
+            self.QDoubleSpinBox_current.setEnabled(True)
+            self.QDoubleSpinBox_threshold.setEnabled(True)
+            self.comboBoxSelectCurrentSource.setCurrentIndex(0)
+            self.comboBoxSelectCurrentSource.setEnabled(True)

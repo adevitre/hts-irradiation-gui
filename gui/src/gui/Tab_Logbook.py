@@ -23,7 +23,6 @@ PRESSURE_CONTROLLER = 'Instrutech FlexRax 4000 Vacuum Gauge Controller'
 class Tab_Logbook(QWidget):
     
     log_signal = pyqtSignal(str, str)
-    reset_signal = pyqtSignal()
 
     def __init__(self, parent=None):
         super(Tab_Logbook, self).__init__(parent)
@@ -44,13 +43,7 @@ class Tab_Logbook(QWidget):
         self.labelSessionLog1 = QLabel('Session event log')
         self.labelSessionLog1.setStyleSheet(self.styles['QLabel_Subtitle'])
         self.labelSessionLog2 = QLabel('A copy of the log is automatically saved with the data')
-
-        self.labelTroubleshooting = QLabel('Troubleshooting')
-        self.labelTroubleshooting.setStyleSheet(self.styles['QLabel_Subtitle'])
         
-        self.pushButtonResetQPS = QPushButton('Reset QPS')
-        self.pushButtonResetQPS.clicked.connect(lambda: self.reset_signal.emit())
-
         self.qShortcut_addLogEntry = QShortcut(QKeySequence('Ctrl+L'), self)
         self.qShortcut_addLogEntry.activated.connect(lambda: self.manualLog())
         
@@ -58,12 +51,7 @@ class Tab_Logbook(QWidget):
         vBoxLayout.addWidget(self.labelSessionLog2)
         vBoxLayout.addWidget(HorizontalLine())
         vBoxLayout.addWidget(self.tableWidget, stretch=8)
-        vBoxLayout.addWidget(self.labelTroubleshooting)
-        vBoxLayout.addWidget(HorizontalLine())
 
-        hBoxLayout = QHBoxLayout()
-        hBoxLayout.addWidget(self.pushButtonResetQPS)
-        vBoxLayout.addLayout(hBoxLayout)
 
     def manualLog(self):
         note, ok = QInputDialog.getText(self, 'Manual log entry', 'Input note then press OK                  ')

@@ -3,17 +3,17 @@ import numpy as np
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine, TextItem
 from PyQt5.QtWidgets import QWidget
 from fittingFunctions import linear, powerLaw
-'''
-    MeasurePlot implements a plotting area for real time data display including navigation tools
-'''
+
 class MeasurePlot(PlotWidget):
-    
+    """
+        MeasurePlot implements a plotting area for real time data display including navigation tools
+    """
     def __init__(self, xLabel='', yLabel='', title='', parent=None):
         super(MeasurePlot, self).__init__(parent)
 
-        label_style = {"color": "#000000", "font-size": "14pt"}
-        self.setLabel("bottom", xLabel, **label_style)
-        self.setLabel("left", yLabel, **label_style)
+        self.label_style = {"color": "#000000", "font-size": "14pt"}
+        self.setLabel("bottom", xLabel, **self.label_style)
+        self.setLabel("left", yLabel, **self.label_style)
         self.setTitle(title)
         self.setBackground('w')
         self.getAxis('left').setTextPen('k')
@@ -57,7 +57,6 @@ class MeasurePlot(PlotWidget):
         self.setXRange(0, 1)
         self.setYRange(-1, 1)
 
-
     def clear(self):
         '''
             Clears the plots
@@ -65,4 +64,9 @@ class MeasurePlot(PlotWidget):
         self.clear()
         del self.lines
         self.lines = []
+    
+    def set_ylabel(self, label):
+        self.setLabel("left", label, **self.label_style)
 
+    def set_xlabel(self, label):
+        self.setLabel("bottom", label, **self.label_style)

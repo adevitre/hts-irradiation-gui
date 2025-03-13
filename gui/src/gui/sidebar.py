@@ -34,7 +34,8 @@ class Sidebar(QWidget):
     targetlight_signal = pyqtSignal(bool)
     settemp_signal = pyqtSignal(float)
     faradaycup_signal = pyqtSignal(bool)
-    
+    reset_signal = pyqtSignal()
+
     def __init__(self, parent=None):
         super(Sidebar, self).__init__(parent)
         self.styles = load_json(fname='styles.json', location=os.getcwd()+'/config')  # stylesheets for QtWidgets
@@ -170,6 +171,11 @@ class Sidebar(QWidget):
         horizontalLayout3.addWidget(self.comboBoxSetTurboValve)
         horizontalLayout3.addStretch()
         verticalLayoutSideBar.addLayout(horizontalLayout3)
+        
+        self.pushButtonResetQPS = QPushButton('Reset QPS')
+        self.pushButtonResetQPS.clicked.connect(lambda: self.reset_signal.emit())
+        verticalLayoutSideBar.addStretch()
+        verticalLayoutSideBar.addWidget(self.pushButtonResetQPS)
         
         self.setLayout(verticalLayoutSideBar)
         

@@ -22,8 +22,7 @@ from task import Task
 from Tab_VoltageCurrent import Tab_VoltageCurrent
 from Tab_VoltageTemperature import Tab_VoltageTemperature
 from Tab_VoltageTime import Tab_VoltageTime
-from Tab_AnalysisTemperature import Tab_AnalysisTemperature
-from Tab_AnalysisFluence import Tab_AnalysisFluence
+from Tab_Analysis import Tab_Analysis
 from Tab_Signals import Tab_Signals
 from Tab_Sequences import Tab_Sequences
 from Tab_Login import Tab_Login
@@ -54,7 +53,7 @@ class GUIManager(QMainWindow):
         super(GUIManager, self).__init__(parent)
         
         self.threadpool = QThreadPool()
-        self.hardwareParameters = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
+        self.hardware_parameters = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
         self.styles = load_json(fname='styles.json', location=os.getcwd()+'/config')  # stylesheets for QtWidgets
         self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')  # software preferences
         
@@ -82,9 +81,7 @@ class GUIManager(QMainWindow):
         self.myCentralWidget.setLayout(self.gridLayout)
         self.setCentralWidget(self.myCentralWidget)
         
-        #
         # Setup the tabs used to control different aspects of the experiment.
-        #
         self.tabWidget = QTabWidget(self)
         self.tabWidget.setStyleSheet(self.styles['QTabWidget'])
 
@@ -117,22 +114,14 @@ class GUIManager(QMainWindow):
         self.measurementTools.addTab(self.vtTools, "Voltage/Time")
 
         # tabs in a tab for data analysis
-        self.analysisTools = QTabWidget(self.tabWidget)
-        self.analysisTools.setStyleSheet(self.styles['QTabWidgetVertical'])
-        self.analysisTools.setTabPosition(QTabWidget.West)
-        
-        self.temperatureAnalysis = Tab_AnalysisTemperature(parent=self)
-        self.fluenceAnalysis = Tab_AnalysisFluence(parent=self)
-        
-        self.analysisTools.addTab(self.temperatureAnalysis, "Temperature")
-        self.analysisTools.addTab(self.fluenceAnalysis, "Fluence")
+        self.analysis_tools = Tab_Analysis(parent=self)
 
         # add vertical tab widgets to horizontal master tab widget
         self.sequencesTools = Tab_Sequences(parent=self)
         self.tabWidget.addTab(self.missionControl, 'Mission Control')
         self.tabWidget.addTab(self.measurementTools, "Measurements")
-        self.tabWidget.addTab(self.analysisTools, "Analysis")
         self.tabWidget.addTab(self.sequencesTools, "Sequences")
+        self.tabWidget.addTab(self.analysis_tools, "Analysis")
         self.tabWidget.addTab(self.deviceTools, "Help")
         self.tabWidget.setCurrentIndex(0)
         
@@ -167,10 +156,15 @@ class GUIManager(QMainWindow):
         self.sidebar.warmup_signal.connect(self.warmup)
         self.sidebar.targetlight_signal.connect(self.toggleTargetLight)
         self.sidebar.chamberlight_signal.connect(self.toggleChamberLight)
+        self.sidebar.reset_signal.connect(self.resetQPS)
+
         self.sequencesTools.run_sequence_signal.connect(self.runSequence)
+        
         self.logbookTools.log_signal.connect(self.log_event)
+        
         self.deviceTools.test_signal.connect(self.testSerialConnection)
-        self.logbookTools.reset_signal.connect(self.resetQPS)
+        self.deviceTools.reconnect_signal.connect(self.reconnect_device)
+
         self.sidebar.settemp_signal.connect(self.setTemperature)
         self.sidebar.faradaycup_signal.connect(self.insertFaradayCup)
         
@@ -229,29 +223,29 @@ class GUIManager(QMainWindow):
     
     @pyqtSlot(float, str)
     def setCurrent(self, current, current_source):
-        if current_source == self.hardwareParameters['LABEL_CS006A']:
+        if current_source == self.hardware_parameters['LABEL_CS006A']:
             self.hm.enableParallelMode(True)
             self.hm.connectSampleTo100A(connected=False)
             self.hm.connectSampleTo6A(connected=True)
-            self.threadpool.start(Task(self.hm.setLargeCurrent, current, self.hardwareParameters['LABEL_CS006A'], vb=True))
+            self.threadpool.start(Task(self.hm.setLargeCurrent, current, self.hardware_parameters['LABEL_CS006A'], vb=True))
 
-        elif current_source == self.hardwareParameters['LABEL_CS100A']:
+        elif current_source == self.hardware_parameters['LABEL_CS100A']:
             self.hm.enableParallelMode(False)
             self.hm.connectSampleTo6A(connected=False)
             self.hm.connectSampleTo100A(connected=True)
-            self.threadpool.start(Task(self.hm.setLargeCurrent, current, self.hardwareParameters['LABEL_CS100A'], vb=True))
+            self.threadpool.start(Task(self.hm.setLargeCurrent, current, self.hardware_parameters['LABEL_CS100A'], vb=True))
             
-        elif current_source == self.hardwareParameters['LABEL_CAEN']:
+        elif current_source == self.hardware_parameters['LABEL_CAEN']:
             self.hm.enableParallelMode(False)
             self.hm.connectSampleTo6A(connected=False)
             self.hm.connectSampleTo100A(connected=True)
-            self.threadpool.start(Task(self.hm.setLargeCurrent, current, self.hardwareParameters['LABEL_CAEN'], vb=True))
+            self.threadpool.start(Task(self.hm.setLargeCurrent, current, self.hardware_parameters['LABEL_CAEN'], vb=True))
         
-        elif current_source == self.hardwareParameters['LABEL_TDK']:
+        elif current_source == self.hardware_parameters['LABEL_TDK']:
             self.hm.enableParallelMode(False)
             self.hm.connectSampleTo6A(connected=False)
             self.hm.connectSampleTo100A(connected=True)
-            self.threadpool.start(Task(self.hm.setLargeCurrent, current, self.hardwareParameters['LABEL_TDK'], vb=True))
+            self.threadpool.start(Task(self.hm.setLargeCurrent, current, self.hardware_parameters['LABEL_TDK'], vb=True))
         
     @pyqtSlot(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
     def updateSignalsPlots(self, time_tc, time_pm, setpointT, sampleT, targetT, holderT, spareT, pressure, power):
@@ -290,10 +284,10 @@ class GUIManager(QMainWindow):
         else:
             self.tm.stopAcquiring()
     
-    @pyqtSlot(float, str, bool, str)
-    def measureVt(self, maxV, current_source, acquiringVt, tag):
+    @pyqtSlot(float, str, bool, bool, str)
+    def measureVt(self, maxV, current_source, hall_measurement, acquiringVt, tag):
         if not acquiringVt:
-            self.threadpool.start(Task(self.tm.measureVt, maxV=maxV, current_source=current_source, tag=tag))
+            self.threadpool.start(Task(self.tm.measureVt, maxV=maxV, current_source=current_source, hall_measurement=hall_measurement, tag=tag))
         else:
             self.tm.stopAcquiring()
     
@@ -433,7 +427,7 @@ class GUIManager(QMainWindow):
                 self.tcTools.sessionTag = ''
                 self.vtTools.sessionTag = ''
 
-            self.dm.vc = self.hardwareParameters['bridgeLength']*1e-1*1e-6 # vc = Ec*d = 1 uV/cm * bridge_length [mm] * 0.1 [cm/mm]
+            self.dm.vc = self.hardware_parameters['bridgeLength']*1e-1*1e-6 # vc = Ec*d = 1 uV/cm * bridge_length [mm] * 0.1 [cm/mm]
             self.enableGUI(True)
 
             ln2Note = ''
@@ -465,3 +459,9 @@ class GUIManager(QMainWindow):
     @pyqtSlot(int)
     def setVoltageSign(self, sign):
         self.hm.setVoltageSign(sign)
+    
+    @pyqtSlot(str)
+    def reconnect_device(self, device_key):
+        self.hardware_parameters = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
+        self.hm.reconnect_device(device_key)
+        

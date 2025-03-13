@@ -1,10 +1,10 @@
 import os, subprocess
 from PyQt5.QtGui import QKeySequence, QPixmap
-from PyQt5.QtWidgets import QWidget, QCheckBox, QLineEdit, QVBoxLayout, QPlainTextEdit, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QInputDialog, QShortcut, QPushButton, QComboBox, QLabel
+from PyQt5.QtWidgets import QWidget, QCheckBox, QLineEdit, QVBoxLayout, QPlainTextEdit, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QInputDialog, QMessageBox, QShortcut, QPushButton, QComboBox, QLabel
 from PyQt5.QtCore import pyqtSignal, Qt
 
 from horizontalline import HorizontalLine
-from configure import load_json
+from configure import load_json, update_json
 
 """
     Tab_Devices is a submodule of the GUI containing GUI objects and functions
@@ -14,13 +14,15 @@ from configure import load_json
     @last-modified January 2025
 """ 
 
-HARDWARE_PARAMETERS = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
      
 class Tab_Devices(QWidget):
 
     log_signal = pyqtSignal(str, str)
     test_signal = pyqtSignal(str)
     reset_signal = pyqtSignal()
+    reconnect_signal = pyqtSignal(str)
+
+    hardware_parameters = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
 
     def __init__(self, parent=None):
         super(Tab_Devices, self).__init__(parent)
@@ -43,7 +45,7 @@ class Tab_Devices(QWidget):
         
         self.device_image = QLabel(self)
         self.comboBoxName = QComboBox(self)
-        self.comboBoxName.addItems([HARDWARE_PARAMETERS['devices'][key]['name'] for key in HARDWARE_PARAMETERS['devices'].keys()])
+        self.comboBoxName.addItems([self.hardware_parameters['devices'][key]['name'] for key in self.hardware_parameters['devices'].keys()])
 
         self.pushButtonLoadManual = QPushButton('Open User Manual')
         self.pushButtonEditParameters = QPushButton('Edit Parameters')
@@ -140,11 +142,11 @@ class Tab_Devices(QWidget):
         self.enableDeviceParameters(False)
 
     def openManual(self):
-        path_to_manual = HARDWARE_PARAMETERS['devices'][self.device_key]['manual']
+        path_to_manual = self.hardware_parameters['devices'][self.device_key]['manual']
         subprocess.run(['xdg-open', path_to_manual], check=True)
 
     def displayDeviceParameters(self):
-        params = HARDWARE_PARAMETERS['devices'][self.device_key]
+        params = self.hardware_parameters['devices'][self.device_key]
 
         # load the device parameters
         self.lineEditBaudRate.setText(str(params['baudrate']))
@@ -167,8 +169,8 @@ class Tab_Devices(QWidget):
         self.device_image.setScaledContents(True)
 
     def comboBoxName_selection_changed(self):
-        for key in list(HARDWARE_PARAMETERS['devices'].keys()):
-            if HARDWARE_PARAMETERS['devices'][key]['name'] == self.comboBoxName.currentText():
+        for key in list(self.hardware_parameters['devices'].keys()):
+            if self.hardware_parameters['devices'][key]['name'] == self.comboBoxName.currentText():
                 self.device_key = key
         self.displayDeviceParameters()
 
@@ -176,7 +178,12 @@ class Tab_Devices(QWidget):
         if connected:
             self.label_tryconnection.setText('{} connected!'.format(device))
         else:
-            self.label_tryconnection.setText('{} not connected!'.format(device))
+            reply = QMessageBox.question(self, 'Reconnect device?', 'Would you like to try to reconnect this device?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                self.reconnect_signal.emit(self.device_key)
+            else:
+                self.label_tryconnection.setText('{} not connected!'.format(device))
+
 
     def checkBoxSetVoltageSign_clicked(self):
         if self.checkboxSetVoltageSign.isChecked():
@@ -190,6 +197,22 @@ class Tab_Devices(QWidget):
             self.pushButtonEditParameters.setEnabled(True)
             self.pushButtonEditParameters.setText('Save/Cancel')
         else:
+            reply = QMessageBox.question(self, 'Save new parameters?', 'Would you like to save the new parameters?', QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+            if reply == QMessageBox.Yes:
+                data = load_json(fname='hwparams.json', location='config')
+                data['devices'][self.device_key]['baudrate'] = int(self.lineEditBaudRate.text())
+                data['devices'][self.device_key]['bytesize'] = int(self.lineEditByteSize.text())
+                data['devices'][self.device_key]['ending'] = self.lineEditEnding.text()
+                data['devices'][self.device_key]['ethernet_port'] = self.lineEditETHPort.text()
+                data['devices'][self.device_key]['xonxoff'] = bool(self.lineEditFlowControl.text())
+                data['devices'][self.device_key]['greeting'] = self.lineEditGreeting.text()
+                data['devices'][self.device_key]['parity'] = self.lineEditParity.text()
+                data['devices'][self.device_key]['response'] = self.lineEditResponse.text()
+                data['devices'][self.device_key]['stopbits'] = int(self.lineEditStopBits.text())
+                data['devices'][self.device_key]['timeout'] = int(self.lineEditTimeout.text())
+                data['devices'][self.device_key]['port'] = self.lineEditUSBPort.text()
+                update_json(data, fname='hwparams.json', location='config')
+                self.hardware_parameters = load_json(fname='hwparams.json', location=os.getcwd()+'/config') # FUTURE FIX ADVISORY -- This should be a global variable. Although updating it won't ahve any effect in other contexts which use these data, it's not very elegant programming.
             self.enableDeviceParameters(False)
             self.pushButtonEditParameters.setEnabled(True)
             self.pushButtonEditParameters.setText('Edit Parameters')
