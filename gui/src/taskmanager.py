@@ -133,6 +133,7 @@ class TaskManager(QObject):
                 self.hm.connectCurrentSource100mATo(device='sample')
             else:
                 self.hm.connectCurrentSource100mATo(device='hallSensor')
+            time.sleep(1)
         
         if connected:
             self.resetQPS() # this might need to be at the end...Seems likely! Alexis Devitre 2024.09.16
@@ -263,6 +264,7 @@ class TaskManager(QObject):
                     self.acquiring = False
                 else:
                     self.log_signal.emit('Note', 'Ic sequence canceled by user')
+
         except Exception as e: # Usually IndexError or TypeError
             ic, n, tavg = numpy.nan, numpy.nan, numpy.nan
             print('TaskManager::measureIc raised: ', e)
@@ -393,6 +395,7 @@ class TaskManager(QObject):
                 elif action == 'MeasureTc':
                     self.log_signal.emit('SequenceUpdate', 'Tc measurement started /{}/{}'.format(0, 100))
                     self.measureTc(startT=float(params[8]), rampRate=float(params[15]), stopT=float(params[12]), transportCurrent=1e-3*float(params[19]), tag=params[4]+'-'+commonLabel)
+                    time.sleep(5)
                     if self.sequenceRunning:
                         self.log_signal.emit('SequenceUpdate', 'Tc measurement complete! /{}/{}'.format(100, 100))
                     else:

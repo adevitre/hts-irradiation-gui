@@ -158,8 +158,10 @@ class HardwareManager(QObject):
             
     def connectCurrentSource100mATo(self, device='sample'):
         self.relays.connectCurrentSource100mATo(device) # connect current source
+        time.sleep(1)
         self.cs100mA.enable(enabled=True)
-    
+        time.sleep(1)
+        
     def connectSampleTo6A(self, connected=True):
         self.relays.connectSampleTo6A(connected)
     

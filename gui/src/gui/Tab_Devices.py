@@ -1,6 +1,7 @@
-import os, subprocess
-from PyQt5.QtGui import QKeySequence, QPixmap
-from PyQt5.QtWidgets import QWidget, QCheckBox, QLineEdit, QVBoxLayout, QPlainTextEdit, QHBoxLayout, QTableWidget, QTableWidgetItem, QHeaderView, QInputDialog, QMessageBox, QShortcut, QPushButton, QComboBox, QLabel
+import os, subprocess, numpy
+from scipy import constants
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QWidget, QCheckBox, QLineEdit, QVBoxLayout, QHBoxLayout, QMessageBox, QPushButton, QComboBox, QLabel, QDoubleSpinBox
 from PyQt5.QtCore import pyqtSignal, Qt
 
 from horizontalline import HorizontalLine
@@ -139,6 +140,50 @@ class Tab_Devices(QWidget):
         self.vboxlayout_top.addWidget(labelShortcuts)
         self.vboxlayout_top.addStretch()
 
+        labelShortcutsTitle = QLabel('Irradiation calculator')
+        labelShortcutsTitle.setStyleSheet(self.styles['QLabel_Subtitle'])
+        self.vboxlayout_top.addStretch()
+        self.vboxlayout_top.addWidget(labelShortcutsTitle)
+        self.vboxlayout_top.addWidget(HorizontalLine())
+
+        hboxlayout_calculator = QHBoxLayout()
+
+        self.label_collimator = QLabel('Collimator diameter [mm]')
+        self.label_flux = QLabel('Beam current [nA]')
+        self.label_charge = QLabel('Ion charge')
+        self.label_fluence = QLabel('Target fluence [10e19 ions/m2]')
+
+        self.doublespinbox_collimator = QDoubleSpinBox()
+        self.doublespinbox_collimator.setValue(3.175)
+        
+        self.doublespinbox_flux = QDoubleSpinBox()
+        self.doublespinbox_flux.setValue(30.0)
+        self.doublespinbox_flux.setMaximum(10000.0)
+
+        self.doublespinbox_charge = QDoubleSpinBox()
+        self.doublespinbox_charge.setValue(1)
+
+        self.doublespinbox_fluence = QDoubleSpinBox()
+        self.doublespinbox_fluence.setValue(5)
+        
+        self.checkbox_calculator = QCheckBox('Time (Fluence)')
+        self.checkbox_calculator.setChecked(True)
+        self.checkbox_calculator.clicked.connect(self.calculator_switched)
+
+        self.label_answer = QLabel('')
+        
+        calculator_widgets = [self.label_collimator, self.doublespinbox_collimator, self.label_flux, self.doublespinbox_flux, self.label_charge, self.doublespinbox_charge, self.label_fluence, self.doublespinbox_fluence]
+        calculator_decimals = [None, 3, None, 2, None, 0, None, 2]
+        for widget, decimals in zip(calculator_widgets, calculator_decimals):
+            hboxlayout_calculator.addWidget(widget)
+            if type(widget) != type(QLabel('')):
+                widget.valueChanged.connect(self.recalculate)
+                widget.setDecimals(decimals)
+        
+        self.vboxlayout_top.addLayout(hboxlayout_calculator)
+        self.vboxlayout_top.addWidget(self.label_answer)
+        self.vboxlayout_top.addStretch()
+
         self.enableDeviceParameters(False)
 
     def openManual(self):
@@ -229,3 +274,32 @@ class Tab_Devices(QWidget):
         self.lineEditGreeting.setEnabled(enabled)
         self.lineEditResponse.setEnabled(enabled)
         self.lineEditETHPort.setEnabled(enabled)
+
+    def recalculate(self):
+        flux = self.doublespinbox_flux.value()*1e-9
+        area = constants.pi*(1e-3*self.doublespinbox_collimator.value()/2)**2
+        charge = constants.elementary_charge*self.doublespinbox_charge.value()
+    
+        if self.checkbox_calculator.isChecked(): # User wants time from fluence
+            target_fluence = self.doublespinbox_fluence.value()*1e19
+            time = target_fluence*charge*area/flux
+            hours = numpy.floor(time/3600)
+            minutes = numpy.floor((time-3600*hours)/60)
+            seconds = time-3600*hours-60*minutes
+            result = 'Irradiate for {:>4.0f} hours {:>4.0f} minutes {:>4.0f} seconds'.format(hours, minutes, seconds)
+        else:
+            time = self.doublespinbox_fluence.value()
+            fluence = time*flux/(charge*area)
+            result = 'The fluence accumulated after {:<10.0f} seconds at {:<4.2f} nA is {:4.2e} ions/m2'.format(time, flux, fluence)
+
+        self.label_answer.setText(result)
+
+    def calculator_switched(self):
+        if self.checkbox_calculator.isChecked(): # User wants time from fluence
+            self.label_fluence.setText('Fluence [1e19 ions/m2]')
+            self.doublespinbox_fluence.setValue(5)
+            self.doublespinbox_fluence.setDecimals(2)
+        else:
+            self.label_fluence.setText('Time [s]')
+            self.doublespinbox_fluence.setValue(1800)
+            self.doublespinbox_fluence.setDecimals(0)
