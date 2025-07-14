@@ -64,11 +64,11 @@ def plotBeamCurrent(data, fig=None, color='k'):
     fig.tight_layout()
     return fig, axrt, axdt
 
-def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname, fig=None):
+def plotBeamCurrentWithMeasurements(fpaths, ibpath, sname, fig=None, year='2024'):
     data = loadBeamCurrent(ibpath, sname=sname)
     if fig is None: fig, ax = plt.subplots(figsize=(9, 4))
     fig, axrt, axdt = plotBeamCurrent(data, fig=fig)
-    starts, ends = getMeasurementStartTime(fpaths, year='2024')
+    starts, ends = getMeasurementStartTime(fpaths, year=year)
     for t0, t1 in zip(starts, ends):
         axdt.axvline(t0, color='b', linestyle=':')
         axdt.axvspan(t0, t1, color='b', alpha=.1)

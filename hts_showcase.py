@@ -6,6 +6,8 @@
     
 '''
 
+import numpy as np
+import matplotlib.pyplot as plt
 import hts_fitting as hts
 import hts_fitfunctions as ff
 import ipywidgets as widgets
@@ -54,7 +56,6 @@ def showcaseIVs(fpaths, style='loglog', vMax=20e-6, bounds=None, titles=None, vb
     spinbox.observe(lambda change: on_spinbox_value_change(change, ax), names='value')
     display(spinbox)
     spinbox.value = 0
-    
     
     
 def showcaseTVs(fpaths, vb=False):

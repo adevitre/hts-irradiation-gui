@@ -1,19 +1,13 @@
 import numpy as np
 import pandas as pd
+import os, re
 import hts_fitfunctions as ff
 from scipy.optimize import brentq
 
 
-def renameFiles(directory):
-    for f in [f for f in os.listdir(directory) if 'anneal270-12h' in f]:
-        pieces = f.split('_')
-        newfname = pieces[0]
-        for piece in pieces[1:-1]:
-            newfname += '_'+piece
-        newfname += '_anneal270k-12h.txt'
-        
-        #print(directory+f, directory+newfname)
-        os.rename(directory+f, directory+newfname)
+def renameFiles(path, pattern, rpattern):
+    for f in [f for f in os.listdir(path) if pattern in f]:
+        os.rename(path + f, path + re.sub(pattern, rpattern, f))
         
 def binAverage(xbins, xdata, ydata):
     yavgs, ystds, yfiltered, xfiltered = [], [], np.array([]), np.array([])

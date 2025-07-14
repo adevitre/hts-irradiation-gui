@@ -1,10 +1,14 @@
 import numpy as np
+from scipy.special import erf
 
 def affine(x, a):
     return a*x
 
 def linear(x, a, b):
     return a*x+b
+
+def log_linear(x, a, b):
+    return a*np.log(x)+b
 
 def square(x, a, b, c):
     return a*x**2+b*x+c
@@ -30,6 +34,9 @@ def powerLaw(i, ic, n):
 def inverseExponential(temperature, a, b, c, t50):
     #return a*temperature*(1-1/(np.exp(b*(temperature-t50))+1))
     return a*temperature-c/(np.exp(b*(temperature-t50))+1)
+
+def modified_erf(temperature, a, v0, Tc):
+    return 0.5*v0*temperature*(erf(a*(temperature - Tc)) + 1)/Tc
 
 def gaussian(x, a0, mu, sigma):
     return a0*np.exp(-.5*((x - mu)/sigma)**2)/(sigma*np.sqrt(2*np.pi))

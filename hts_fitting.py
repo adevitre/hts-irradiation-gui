@@ -3,7 +3,6 @@
     A library to load, plot and fit Critical Current (Ic) and Critical Temperature (Tc) of REBCO coated conductors.
     @author Alexis Devitre (devitre@mit.edu)
     @modified 2024/09/03
-    
 '''
 import hts_misc
 import hts_fitfunctions as ff
@@ -330,20 +329,24 @@ def correctBackground(current, voltage, vc=.2e-6, ic=30, n=30, vThreshold=1e-7, 
     return voltage
 
 
-def fitTcMeasurement(fpath, wsz=10, vb=False):
-    tc = np.nan
-    data = readTV(fpath)
+def fitTcMeasurement(fpath, wsz=10, fit_range=None, vb=False):
+    tc, data = np.nan, readTV(fpath)
+    if fit_range is not None:
+        data = data[(fit_range[0] < data.sampleT) & (data.sampleT < fit_range[1])]
     xsmooth = np.linspace(data.sampleT.min(), data.sampleT.max(), 100000)
     rdata = data.rolling(wsz).mean()
+    
     vdT = (rdata.voltage.diff()/rdata.sampleT.diff())
     cut = np.isfinite(vdT).values
     temperature, vdT = rdata.sampleT[cut], vdT[cut]
+    
     popt, pcov = curve_fit(ff.gaussian, temperature, vdT, p0=[2, rdata.sampleT[(rdata.voltage-rdata.voltage.max()/2).abs().argmin()], 1])
     ysmooth = ff.gaussian(xsmooth, *popt)
     tc = xsmooth[np.argmax(ysmooth)]
-    vtc = rdata.voltage[(rdata.sampleT-tc).abs().argmin()]
+    vtc = rdata.voltage.iloc[(rdata.sampleT-tc).abs().argmin()]
+    
     if vb:
-        fig, ax = plt.subplots(2, 1, figsize=(9, 4), sharex=True)
+        fig, ax = plt.subplots(2, 1, figsize=(9, 6), sharex=True)
         ax[0].plot(rdata.sampleT, 1e6*rdata.voltage, label=wsz, color='k')
         ax[1].plot(temperature, 1e6*vdT, linestyle='None', marker='+', markersize=2, color='b')
         ax[1].plot(xsmooth, 1e6*ysmooth, color='k')
@@ -403,9 +406,80 @@ def fitTc(temperature, voltage, time, bounds=(80, 90), ax=None, label='', filter
         
     return t50, tore
 
-
-def fitTV(temperature, voltage):
+def fitTV(temperature, voltage, vb=False):
     '''
+        fitTV fits the TV data to a 3-parameter inverse exponential
+        
+        INPUTS
+        ----------------------------------------------------------
+        temperature (float, list) - measured temperatures
+        voltage (float, list) - Measured voltages (must be same length as temperature)
+        vb (bool) - True if explanatory plots should be plotted
+        RETURNS
+        ----------------------------------------------------------
+        tc_lossless (float) - value of the temperature below which cooper pairs form
+        tc_superconducting (float) - value of the temperature below which the current is carried without resistance
+    '''
+    try:
+        voltage *= 1e6
+        # initial estimates
+        a0 = -2.                                
+        v0 = np.max(voltage)                                                         
+        T0 = temperature[np.argmin(np.abs(voltage-v0/2))]  # T50 is more or less at half the maximum voltage
+        
+        
+        # use inverse exponential fit to determine T50
+        popt, pcov = curve_fit(ff.modified_erf, temperature, voltage, p0=[a0, v0, T0])
+        xsmooth = np.linspace(np.min(temperature), np.max(temperature), 10000)
+        ysmooth = ff.modified_erf(xsmooth, *popt)
+        
+        # use linear fits to determine Tosc and Tore
+        derivative = np.diff(ysmooth)/np.diff(xsmooth)
+        
+        slope_bottom = 0.
+        inter_bottom = 0.
+        
+        slope_rise = np.max(derivative)
+        inter_rise = ysmooth[np.argmax(derivative)]-slope_rise*xsmooth[np.argmax(derivative)]
+        
+        slope_top = popt[1]/popt[2] # Slope of the upper shelf
+        inter_top = 0.              # Ohm's law crosses zero
+        
+        Tr = -inter_rise/slope_rise
+        Tc = popt[2]
+        Ts = inter_rise/(slope_top-slope_rise)
+        
+        if vb:
+            fig, ax = plt.subplots()
+            ax.plot(temperature, voltage, linestyle='None', marker='+', color='k')
+            ax.plot(xsmooth, ysmooth, linestyle='-', linewidth=6, color='b', alpha=1)
+             
+            yr = ff.linear(xsmooth, slope_bottom, inter_bottom)
+            yc = ff.linear(xsmooth, slope_rise, inter_rise)
+            ys = ff.linear(xsmooth, slope_top, inter_top)
+            
+            ax.plot(xsmooth, yr, color='k', linewidth=3, linestyle='--')
+            ax.plot(xsmooth, yc, color='k', linewidth=3, linestyle='--')
+            ax.plot(xsmooth, ys, color='k', linewidth=3, linestyle='--')
+            
+            ax.plot(Tr, yr[np.argmin(np.abs(xsmooth-Tr))], marker='o', markersize=10)
+            ax.plot(Tc, yc[np.argmin(np.abs(xsmooth-Tc))], marker='o', markersize=10)
+            ax.plot(Ts, ys[np.argmin(np.abs(xsmooth-Ts))], marker='o', markersize=10)
+            
+            ax.set_ylim(0, 5 * np.ceil(np.max(voltage)/5))
+            ax.set_xlim(np.min(temperature), np.max(temperature))
+            ax.set_xlabel('Sample Temperature [K]')
+            ax.set_ylabel('Voltage [uV]')
+
+    except Exception as e:
+        print('fittingFunctions::fitTV returned: ', e)
+        Tr, Tc, Ts, popt = np.nan, np.nan, np.nan, [np.nan, np.nan, np.nan]
+        
+    return Tr, Tc, Ts, popt
+
+'''
+def fitTV(temperature, voltage):
+    
         fitTV fits the TV data to a 3-parameter inverse exponential
         
         INPUTS
@@ -417,7 +491,7 @@ def fitTV(temperature, voltage):
         ----------------------------------------------------------
         tc_lossless (float) - value of the temperature below which cooper pairs form
         tc_superconducting (float) - value of the temperature below which the current is carried without resistance
-    '''
+    
     try:
         # initial estimates
         a0 = voltage[-1]/temperature[-1]                                # Ohm's law crosses zero!
@@ -450,7 +524,7 @@ def fitTV(temperature, voltage):
         Tore, T50, Tosc, popt = np.nan, np.nan, np.nan, [np.nan, np.nan, np.nan]
         
     return Tore, T50, Tosc, popt
-
+'''
 
 ########################################################################################
 ########################################################################################
@@ -458,7 +532,7 @@ def fitTV(temperature, voltage):
 ########################################################################################
 ########################################################################################
 
-def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
+def getIcT(fpaths, function='linear', fig=None, label=None, color='k', fit=False, vb=False):
     if vb:
         if fig is None:
             fig, ax = plt.subplots()
@@ -467,22 +541,33 @@ def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
     else:
         fig, ax = None, None
 
-    ics, temperatures, filepaths, timeends, popt = [], [], [], [], []
+    ics, ns, temperatures, filepaths, timeends, popt = [], [], [], [], [], []
     
     for fpath in fpaths:
         try:
             data = readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False)
-            popt, pcov, chisq = fitIV(data.current, data.voltage)
-            ics.append(popt[0])
+            ic, n, current, voltage, chisq, pcov = fitIcMeasurement(fpath, function=function)
+            
+            ics.append(ic)
+            ns.append(n)
+            
             timeends.append(hts_misc.fname_to_timestamp(fpath.split('/')[-1]).timestamp())
             temperatures.append(np.mean(data.sampleT[-10:]))
             filepaths.append(fpath)
             
+            if vb:
+                print('')
+                print('Processing {}'.format(fpath))
+                print('Ic = {:4.2f}, T = {:4.2f}'.format(ic, np.mean(data.sampleT[-10:])))
+            
         except Exception as e:
             if vb: print(fpath, '\n', e)
-            
+    
+    temperatures, ics = np.array(temperatures), np.array(ics)
+    cut = (temperatures != np.nan) & (ics != np.nan)
+    
     if fit:
-        popt, pcov = curve_fit(ff.cubic, temperatures, ics)
+        popt, pcov = curve_fit(ff.cubic, temperatures[cut], ics[cut])
     if vb:
         if fit:
             xsmooth = np.linspace(0, 100, 10000)
@@ -495,6 +580,6 @@ def getIcT(fpaths, fig=None, label=None, color='k', fit=False, vb=False):
         
         ax.legend(loc='best')
     
-    data = pd.DataFrame({'fpath': filepaths, 'temperature': temperatures, 'ic': ics, 'timeends': timeends})
+    data = pd.DataFrame({'fpath': filepaths, 'temperature': temperatures, 'ic': ics, 'n':n, 'timeends': timeends})
     
     return fig, ax, data, popt
