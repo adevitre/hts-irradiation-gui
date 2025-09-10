@@ -11,7 +11,7 @@ class NanoVoltmeter(Device):
     def __init__(self, waitLock=350):
         super().__init__('nanovoltmeter', waitLock=waitLock)
         self.display_text('Wazaaaaa! waaaaazaaaaaa... aaaah', delay=0.1)
-        self.offset = 0.
+        self.offset, self.polarity = 0., 1
         
         if self.ser is not None:
             self.initialize()

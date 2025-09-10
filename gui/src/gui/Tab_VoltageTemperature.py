@@ -124,7 +124,7 @@ class Tab_VoltageTemperature(QWidget):
                     # add a new curve that will be updated during the measurement
                     self.enableDataAcquisition(tag=tag, enabled=True)
 
-                    self.measure_signal.emit(self.QSpinBox_rampStart.value(), self.QSpinBox_rampRate.value(), self.QSpinBox_rampStop.value(), self.QSpinBox_transportCurrent.value(), False, tag)
+                    self.measure_signal.emit(self.QSpinBox_rampStart.value(), self.QSpinBox_rampRate.value(), self.QSpinBox_rampStop.value(), 1e-3*self.QSpinBox_transportCurrent.value(), False, tag)
                     self.acquiring = True
                 else:
                     QMessageBox.warning(self, 'Warning: invalid tag', 'Use only alphanumeric characters.')    

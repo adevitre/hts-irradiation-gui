@@ -8,22 +8,20 @@ from PyQt5.QtCore import pyqtSignal, QObject, QThreadPool, QTimer, QMutex
 
 from task import Task
 
-'''
-    Performs all high-level functions of the HTS irradiation setup at the Vault
-    * Measurement of the critical current, Ic
-    * Measurement of the critical temperature, Tc
-    * Annealing sequence
-    * Temperature control
-    * Vacuum connections for roughing and turbo pumps
-    
-    @author Alexis Devitre devitre@mit.edu, David Fischer dafisch@mit.edu
-    @lastModified 06/04/2023 Alexis Devitre
-'''
-
 HARDWARE_PARAMETERS = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
 
 class TaskManager(QObject):
-    
+    '''
+        Performs all high-level functions of the HTS irradiation setup at the Vault
+        * Measurement of the critical current, Ic
+        * Measurement of the critical temperature, Tc
+        * Annealing sequence
+        * Temperature control
+        * Vacuum connections for roughing and turbo pumps
+        
+        @author Alexis Devitre devitre@mit.edu, David Fischer dafisch@mit.edu
+        @lastModified 06/04/2023 Alexis Devitre
+    '''
     log_signal = pyqtSignal(str, str)
     plotSignal = pyqtSignal(float, float, str)
 
@@ -132,9 +130,10 @@ class TaskManager(QObject):
             self.useDMM = True
             self.hm.setSmallCurrent(0.000)
             if connected:
-                self.hm.connectCurrentSource100mATo('sample')
+                self.hm.connectCurrentSource100mATo(device='sample')
             else:
                 self.hm.connectCurrentSource100mATo(device='hallSensor')
+            time.sleep(1)
         
         if connected:
             self.resetQPS() # this might need to be at the end...Seems likely! Alexis Devitre 2024.09.16
@@ -265,6 +264,7 @@ class TaskManager(QObject):
                     self.acquiring = False
                 else:
                     self.log_signal.emit('Note', 'Ic sequence canceled by user')
+
         except Exception as e: # Usually IndexError or TypeError
             ic, n, tavg = numpy.nan, numpy.nan, numpy.nan
             print('TaskManager::measureIc raised: ', e)
@@ -275,24 +275,30 @@ class TaskManager(QObject):
             if not self.sequenceRunning: # in case the measurement was requested by the GUI not by a sequence.
                 self.log_signal.emit('nextIV', tag)
 
-    def measureVt(self, maxV=1e-5, tag='Pristine', current_source=HARDWARE_PARAMETERS['LABEL_CS100A']):
-        '''
+    def measureVt(self, maxV=1e-5, current_source=HARDWARE_PARAMETERS['LABEL_CS100A'], hall_measurement=False, tag='Pristine'):
+        """
             Performs voltage vs time measurement.
             
             @params
             tStep (float): Sampling period in seconds
             maxV (float): Voltage at which the current ramp is terminated
             tag (string) Data file label
-        '''
+            hall_measurement (bool) - whether to connect the current source to the hall sensor or the four point probe
+        """
         self.connectFourPointProbe(connected=True, current_source=current_source)
 
         try:
-            if maxV == 0.:
-                maxV = numpy.inf
+            if maxV == 0.: maxV = numpy.inf
 
             self.datapoints, self.acquiring, v = [], True, 0
-            self.hm.setVoltageOffset() # needs to come after acquiring is set to True to avoid conflicts
             
+            if hall_measurement:
+                self.hm.connectCurrentSource100mATo(device='hallSensor')
+                self.hm.setVoltageOffset() # needs to come after acquiring is set to True to avoid conflicts
+                self.hm.setSmallCurrent(100e-3)
+            else:
+                self.hm.setVoltageOffset() # needs to come after acquiring is set to True to avoid conflicts
+
             while(self.acquiring and (abs(v) < maxV)):
                 t, v, i, sampleT, targetT, holderT, spareT = time.time()-self.dm.t0, self.hm.getVoltageReading(removeOffset=True), self.hm.getCurrentReading(useDMM=self.useDMM), self.dm.getLatestValue('Sample Temperature'), self.dm.getLatestValue('Target Temperature'), self.dm.getLatestValue('Holder Temperature'), self.dm.getLatestValue('Spare Temperature')
                 self.datapoints.append([float(datetime.datetime.now().strftime('%Y%m%d%H%M%S.%f')), t, i, v, sampleT, targetT, holderT, spareT])
@@ -302,7 +308,7 @@ class TaskManager(QObject):
             
         except Exception as e:
             tmax, self.acquiring = numpy.nan, False
-            print('TaskManager::measureVt raised: ', e)
+            self.log_signal.emit('Exception', 'TaskManager::measureVt raised: {}'.format(str(e)))
             
         finally:
             self.connectFourPointProbe(connected=False, current_source=current_source)
@@ -363,10 +369,12 @@ class TaskManager(QObject):
     
 
     def runSequence(self, sequence):
+        move_step_index_highlight = True # This parameter is used to prevent loaded subsequences from increasing the index of the highlight in the run queue.
         try:
             self.sequenceRunning, i = True, 0
             self.log_signal.emit('SequenceStarted', 'Sequence started by user.')
             commonLabel = ''
+
             while self.sequenceRunning and (i < len(sequence)):
                 params = sequence[i].split()
                 action = params[0]
@@ -374,7 +382,7 @@ class TaskManager(QObject):
                 if action == 'MeasureIc':
                     nic, waitBetweenIVs = int(params[8]), int(params[14])
                     for n in range(nic):
-                        self.measureIc(currentSource=params[-1], rampStart=float(params[18]), iStep=float(params[21]), maxV=float(params[25])*1e-6, tag=commonLabel+'_'+params[4], vb=True)
+                        self.measureIc(currentSource=params[-1], rampStart=float(params[18]), iStep=float(params[21]), maxV=float(params[25])*1e-6, tag=params[4]+'-'+commonLabel, vb=True)
                         if self.sequenceRunning:
                             self.log_signal.emit('SequenceUpdate', 'Ic measurement /{}/{}'.format(n+1, nic))
                             time.sleep(waitBetweenIVs) # there must be a delay to write the data to file
@@ -386,7 +394,8 @@ class TaskManager(QObject):
                     
                 elif action == 'MeasureTc':
                     self.log_signal.emit('SequenceUpdate', 'Tc measurement started /{}/{}'.format(0, 100))
-                    self.measureTc(startT=float(params[8]), rampRate=float(params[15]), stopT=float(params[12]), transportCurrent=int(params[19]), tag=commonLabel+'_'+params[4])
+                    self.measureTc(startT=float(params[8]), rampRate=float(params[15]), stopT=float(params[12]), transportCurrent=1e-3*float(params[19]), tag=params[4]+'-'+commonLabel)
+                    time.sleep(5)
                     if self.sequenceRunning:
                         self.log_signal.emit('SequenceUpdate', 'Tc measurement complete! /{}/{}'.format(100, 100))
                     else:
@@ -431,11 +440,22 @@ class TaskManager(QObject):
                             time.sleep(1)
                         else:
                             break
+
+                elif action == 'Subsequence':
+                    if params[-1] == 'start':
+                        move_step_index_highlight = False
+                    else:
+                        move_step_index_highlight = True
+
                 else:
                     self.log_signal.emit('InvalidStep', 'Step {} in Sequence {} is not a valid action.'.format(i, 'SequenceName'))
                 
                 i += 1
-                self.log_signal.emit('SequenceUpdate', '*'+action+'(Complete) /0/100')
+                
+                if move_step_index_highlight:
+                    self.log_signal.emit('SequenceUpdate', '*'+action+'(Complete) /0/100')
+                else:
+                    self.log_signal.emit('SequenceUpdate', action+'(Complete) /0/100')
 
         except Exception as e:
             self.log_signal.emit('Exception', 'Exception while running sequence {} step {}:\n{}/0/0'.format('SequenceName', i, e))

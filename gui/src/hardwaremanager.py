@@ -20,12 +20,13 @@ POWER_SUPPLY = 'Keithley 2231-A-30-3 Power Supply'
 NANOVOLTMETER = 'Keithley 2182A Nanovoltmeter'
 MULTIMETER = 'Keithley DMM6500 Digital Multimeter'
 PRESSURE_CONTROLLER = 'Instrutech FlexRax 4000 Vacuum Gauge Controller'
+CURRENT_SOURCE_TDK = 'TDK Current Source GEN6-100'
 
-HARDWARE_PARAMETERS = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
-        
 class HardwareManager(QObject):
     
     log_signal = pyqtSignal(str, str)
+    
+    hardware_parameters = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
     
     def __init__(self, parent=None):
         self.tc, self.pm, self.nvm, self.dmm = None, None, None, None
@@ -35,14 +36,14 @@ class HardwareManager(QObject):
         self.vs = VoltageSource()
         self.csCAEN = CurrentSourceCAEN()
         self.csTDK = None #CurrentSourceTDK()
-        self.cs100A = CurrentSource100A(HARDWARE_PARAMETERS["a"], HARDWARE_PARAMETERS["b"], HARDWARE_PARAMETERS["shuntR"], self.vs, self.csCAEN, self.csTDK)
+        self.cs100A = CurrentSource100A(self.hardware_parameters["a"], self.hardware_parameters["b"], self.hardware_parameters["shuntR"], self.vs, self.csCAEN, self.csTDK)
         self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50))
         self.relays = Relays()
         
         self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=True)
         self.pm = PressureMonitor(int(self.preferences["sampling_period_pm"]*1000-50))
         self.nvm = NanoVoltmeter(int(self.preferences["sampling_period_nv"]*1000-50))
-        self.dmm = DMM6500(HARDWARE_PARAMETERS["shuntR"], int(self.preferences["sampling_period_nv"]*1000-50))
+        self.dmm = DMM6500(self.hardware_parameters["shuntR"], int(self.preferences["sampling_period_nv"]*1000-50))
            
     def initializeHardware(self):
         self.relays.connectCurrentSource100mATo(device='hallSensor') # connect current source
@@ -119,7 +120,7 @@ class HardwareManager(QObject):
     def setSmallCurrent(self, current=0):
         self.cs100mA.setCurrent(current)
     
-    def setLargeCurrent(self, current=0, currentSource=HARDWARE_PARAMETERS['LABEL_CS100A'], calib=True, vb=False):
+    def setLargeCurrent(self, current=0, currentSource="HP6260B-120A", calib=True, vb=False):
         if vb: self.log_signal.emit('CurrentSet', 'Power supply {} set by user to {:4.2f} A'.format(currentSource, current))
         return self.cs100A.setCurrent(current, currentSource, calib, vb=vb)
     
@@ -157,8 +158,10 @@ class HardwareManager(QObject):
             
     def connectCurrentSource100mATo(self, device='sample'):
         self.relays.connectCurrentSource100mATo(device) # connect current source
+        time.sleep(1)
         self.cs100mA.enable(enabled=True)
-    
+        time.sleep(1)
+        
     def connectSampleTo6A(self, connected=True):
         self.relays.connectSampleTo6A(connected)
     
@@ -207,23 +210,22 @@ class HardwareManager(QObject):
         self.relays.openGateValve(opened)
         self.log_signal.emit('GateValveToggle', 'Open = {}'.format(opened))
 
-    def testSerialConnection(self, device=TEMPERATURE_CONTROLLER):
-        if device == TEMPERATURE_CONTROLLER:
+    def testSerialConnection(self, device):
+        if device == self.hardware_parameters['devices']['temperature_controller']['name']:
             connected = self.tc.testConnection()
-        elif device == CURRENT_SOURCE:
+        elif device == self.hardware_parameters['devices']['current_source_tc']['name']:
             connected = self.cs100mA.testConnection()
-            if not connected:
-                print('fuser -k {}'.format(self.cs100mA.settings['port']))
-            #connected = self.cs100mA.testSerialConnection()
-
-        elif device == POWER_SUPPLY:
-            connected = self.vs.testSerialConnection()
-        elif device == NANOVOLTMETER:
-            connected = self.nvm.testSerialConnection()
-        elif device == MULTIMETER:
-            connected = self.dmm.testSerialConnection()
-        elif device == PRESSURE_CONTROLLER:
-            connected = self.pm.testSerialConnection()
+        elif device == self.hardware_parameters['devices']['voltagesource']['name']:
+            connected = self.vs.testConnection()
+        elif device == self.hardware_parameters['devices']['nanovoltmeter']['name']:
+            connected = self.nvm.testConnection()
+        elif device == self.hardware_parameters['devices']['multimeter']['name']:
+            connected = self.dmm.testConnection()
+        elif device == self.hardware_parameters['devices']['pressure_monitor']['name']:
+            connected = self.pm.testConnection()
+        else:
+            print('There is no implementation for testing the connection of this device')
+            connected = False
         self.log_signal.emit('SerialStatus', '{}~{}'.format(device, connected))
 
     def setTargetLight(self, on=False):
@@ -238,3 +240,46 @@ class HardwareManager(QObject):
 
     def resetQPS(self):
         self.relays.resetQPS()
+
+    def reconnect_device(self, device_key):
+        '''
+            reconnect_device is called by a button in the help tab when the device registers as disconnected and the user wants to try to connect.
+
+            INPUT
+            --------
+            device_key (str) - the unique identifier for a given device which allows the code to find all information related to this device in hwparams.json
+        '''
+        self.hardware_parameters = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
+        if device_key == 'temperature_controller':
+            if self.tc is not None: del self.tc
+            self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=True)
+        elif device_key == 'current_source_tc':
+            if self.cs100mA is not None: del self.cs100mA
+            self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50))
+        elif device_key == 'voltagesource':
+            if self.vs is not None: del self.vs
+            self.vs = VoltageSource()
+        elif device_key == 'nanovoltmeter':
+            if self.nvm is not None: del self.nvm
+            self.nvm = NanoVoltmeter(int(self.preferences["sampling_period_nv"]*1000-50))
+        elif device_key == 'multimeter':
+            if self.dmm is not None: del self.dmm
+            self.dmm = DMM6500(self.hardware_parameters["shuntR"], int(self.preferences["sampling_period_nv"]*1000-50))
+        elif device_key == 'pressure_monitor':
+            if self.pm is not None: del self.pm
+            self.pm = PressureMonitor(int(self.preferences["sampling_period_pm"]*1000-50))
+        else:
+            print('There is no implementation for reconnecting this device')
+            #self.csCAEN = CurrentSourceCAEN()
+            #self.csTDK = None #CurrentSourceTDK()
+            #self.cs100A = CurrentSource100A(self.hardware_parameters["a"], self.hardware_parameters["b"], self.hardware_parameters["shuntR"], self.vs, self.csCAEN, self.csTDK)
+        
+        success = self.testSerialConnection(device=self.hardware_parameters['devices'][device_key]['name'])
+
+        if success:
+            self.log_signal.emit('Reconect', 'Attempt to reconnect {} was successful'.format(self.hardware_parameters[devices][device_key]['name']))
+        else:
+            self.log_signal.emit('Reconect', 'Attempt to reconnect {} was unsuccessful'.format(self.hardware_parameters['devices'][device_key]['name']))
+
+        
+        

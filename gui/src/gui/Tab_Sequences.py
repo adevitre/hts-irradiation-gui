@@ -11,15 +11,15 @@ from PyQt5.QtWidgets import QWidget, QLineEdit, QListWidgetItem, QProgressBar, Q
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
 from PyQt5.QtGui import QColor, QIcon
 
-"""
-    Tab_Sequences is a submodule of the GUI containing GUI objects and functions
-    needed to perform sequences of measurements and environmental condition control.
 
-    @author Alexis Devitre (devitre@mit.edu)
-    @last-modified July 2024
-"""
 class Tab_Sequences(QWidget):
-    
+    """
+        Tab_Sequences is a submodule of the GUI containing GUI objects and functions
+        needed to perform sequences of measurements and environmental condition control.
+
+        @author Alexis Devitre (devitre@mit.edu)
+        @last-modified July 2024
+    """
     run_sequence_signal = pyqtSignal(list)
     log_signal = pyqtSignal(str, str)
     
@@ -239,11 +239,13 @@ class Tab_Sequences(QWidget):
         sequence = []
         for item in items:
             if item[0] == '/':
+                sequence.append('Subsequence : start')
                 with open(item, 'r') as f:
                     steps = [l.strip() for l in f.readlines() if not l.isspace()]
                     for step in steps:
                         sequence.append(step)
                     f.close()
+                sequence.append('Subsequence : stop')
             else:
                 sequence.append(item)
         return sequence
@@ -269,12 +271,12 @@ class Tab_Sequences(QWidget):
             
         elif status_text.split()[0] != 'SequenceComplete':
             try:
-                progress = int(status_text.split('/')[1])
-                maximum = int(status_text.split('/')[2])
+                progress = int(float(status_text.split('/')[1]))
+                maximum = int(float(status_text.split('/')[2]))
                 self.progressStatus.setValue(progress)
                 self.progressStatus.setMaximum(maximum) # integers = re.findall(r'\d+', statusText)
             except Exception as e:
-                print(type(e), e)
+                print('Tab_Sequence::updateStepStatus raised ', type(e), e)
 
         if status_text[0] == '*':
             self.listWidget.setCurrentRow(self.listWidget.currentRow()+1)

@@ -1,19 +1,13 @@
 import numpy as np
 import pandas as pd
+import os, re
 import hts_fitfunctions as ff
 from scipy.optimize import brentq
 
 
-def renameFiles(directory):
-    for f in [f for f in os.listdir(directory) if 'anneal270-12h' in f]:
-        pieces = f.split('_')
-        newfname = pieces[0]
-        for piece in pieces[1:-1]:
-            newfname += '_'+piece
-        newfname += '_anneal270k-12h.txt'
-        
-        #print(directory+f, directory+newfname)
-        os.rename(directory+f, directory+newfname)
+def renameFiles(path, pattern, rpattern):
+    for f in [f for f in os.listdir(path) if pattern in f]:
+        os.rename(path + f, path + re.sub(pattern, rpattern, f))
         
 def binAverage(xbins, xdata, ydata):
     yavgs, ystds, yfiltered, xfiltered = [], [], np.array([]), np.array([])
@@ -45,34 +39,7 @@ def time_between_measurements(fname1, fname2):
     ts2 = fname_to_timestamp(fname2)
     return abs(ts1 - ts2)
 
-def readEnvironmentFile(fpath):
-    return pd.read_csv(fpath, delim_whitespace=True, parse_dates={'datetime' : [0, 1]}, date_format={'date':'%d/%m/%y', 'timestamp':'%H:%M:%S.%f'})
 
-def concatenateEnvironmentFiles(fpaths, vb=False):
-    i, deltaT = 0, 0
-    data = readEnvironmentFile(fpaths[0])
-
-    for fpath in fpaths[1:]:
-        nextdata = readEnvironmentFile(fpath)
-        deltaT = (nextdata.iloc[0].datetime-data.iloc[-1].datetime).total_seconds()
-        nextdata['time_s'] += data.time_s.values[-1] + deltaT
-        missing_times = np.arange(data.time_s.values[-1], nextdata.time_s.values[0], data.time_s[-20:].diff().mean())
-
-        data = pd.concat([data, pd.DataFrame({'time_s': missing_times}), nextdata], ignore_index=True)
-        data = data.sort_values('time_s').interpolate(method='linear').reset_index(drop=True)
-    
-    if vb:
-        fig, ax = plt.subplots(figsize=(9, 4))
-        if 'temperature' in fpaths[0]:
-            ax.plot(data.time_s, data.targetT_K, color='r')
-            ax.plot(data.time_s, data.sampleT_K, color='b')
-            ax.set_ylim(0, 300)
-            ax.set_xlim(0, data.time_s.max())
-        else:
-            ax.semilogy(data.time_s, data.pressure_torr, color='g')
-            ax.set_ylim(1e-8, 1e3)
-            ax.set_xlim(0, data.time_s.max())
-    return data
 
 ######################### Beam-on experiments #########################
 

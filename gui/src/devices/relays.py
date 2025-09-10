@@ -1,6 +1,4 @@
-import sys
-import serial
-import time
+import serial, time
 
 RELAYBOARD_ADDR_100A_SAMPLE = 0   # checked 14/03/2023
 RELAYBOARD_ADDR_100mA_SAMPLE = 1  # checked 14/03/2023
@@ -11,16 +9,17 @@ RELAYBOARD_ADDR_NVM_PICO = 12     # checked 14/03/2023
 RELAYBOARD_ADDR_TARGETLIGHT = 13  # checked 14/03/2024
 RELAYBOARD_ADDR_CHAMBERLIGHT = 14 # checked 14/03/2024
 RELAYBOARD_ADDR_FARADAYCUP = 30
-RELAYBOARD_ADDR_QPS = 15          # NOT checked
+RELAYBOARD_ADDR_QPS = 15          # checked 03/02/2025
 
 class Relays:
-    
+    '''
+        Implements relay function on the NUMATO Labs32 USB relay board
+    '''
     def __init__(self):
         '''
             __init__ instantiates an object of class Relays
         '''
         self.ser = serial.Serial('/dev/ttyACM0', 19200, timeout=1)
-        #for index in range(32): 
         
         self.measureSampleWith(device='nanovoltmeter')
         self.connectCurrentSource100mATo(device='hallSensor')
@@ -48,7 +47,7 @@ class Relays:
                 * index (int) relay index from 0-31
                 * state (str) 'on' or 'off'
         '''
-        if (int(index) < 10):
+        if int(index) < 10:
             index = str(index)
         else:
             index = chr(55 + int(index))
@@ -70,9 +69,9 @@ class Relays:
         else:
             index = chr(55 + int(index))
 
+        state = -1
         self.ser.write(bytes('relay read {}\r'.format(index), 'utf-8'))
         r = str(self.ser.read(200).decode('utf-8').strip()).split('\n\r')[-2]
-        
         if 'on' in r:
             state = 0
         elif 'off' in r:
@@ -162,9 +161,9 @@ class Relays:
                 on (bool) Desired state of the light True (light on), False (light off).
         '''
         if on:
-            self.setRelayState(RELAYBOARD_ADDR_HATLIGHT, state='on')
+            self.setRelayState(RELAYBOARD_ADDR_TARGETLIGHT, state='on')
         else:
-            self.setRelayState(RELAYBOARD_ADDR_HATLIGHT, state='off')
+            self.setRelayState(RELAYBOARD_ADDR_TARGETLIGHT, state='off')
 
     def measureSampleWith(self, device='picoammeter'):
         '''

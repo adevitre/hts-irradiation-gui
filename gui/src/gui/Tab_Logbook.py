@@ -23,9 +23,6 @@ PRESSURE_CONTROLLER = 'Instrutech FlexRax 4000 Vacuum Gauge Controller'
 class Tab_Logbook(QWidget):
     
     log_signal = pyqtSignal(str, str)
-    test_signal = pyqtSignal(str)
-    setvoltagesign_signal = pyqtSignal(int)
-    reset_signal = pyqtSignal()
 
     def __init__(self, parent=None):
         super(Tab_Logbook, self).__init__(parent)
@@ -46,20 +43,7 @@ class Tab_Logbook(QWidget):
         self.labelSessionLog1 = QLabel('Session event log')
         self.labelSessionLog1.setStyleSheet(self.styles['QLabel_Subtitle'])
         self.labelSessionLog2 = QLabel('A copy of the log is automatically saved with the data')
-
-        self.labelTroubleshooting = QLabel('Troubleshooting')
-        self.labelTroubleshooting.setStyleSheet(self.styles['QLabel_Subtitle'])
-        self.labelTestConnection = QLabel('')
-        self.checkboxSetVoltageSign = QCheckBox('Reverse voltage sign?', self)
-        self.checkboxSetVoltageSign.clicked.connect(self.checkBoxSetVoltageSign_clicked)
-        self.pushButtonTestConnection = QPushButton('Connected?')
-        self.pushButtonTestConnection.clicked.connect(lambda: self.test_signal.emit(self.comboBoxTestConnection.currentText()))
-        self.comboBoxTestConnection = QComboBox()
-        self.comboBoxTestConnection.addItems([TEMPERATURE_CONTROLLER, CURRENT_SOURCE, POWER_SUPPLY, NANOVOLTMETER, MULTIMETER, PRESSURE_CONTROLLER])
         
-        self.pushButtonResetQPS = QPushButton('Reset QPS')
-        self.pushButtonResetQPS.clicked.connect(lambda: self.reset_signal.emit())
-
         self.qShortcut_addLogEntry = QShortcut(QKeySequence('Ctrl+L'), self)
         self.qShortcut_addLogEntry.activated.connect(lambda: self.manualLog())
         
@@ -67,40 +51,15 @@ class Tab_Logbook(QWidget):
         vBoxLayout.addWidget(self.labelSessionLog2)
         vBoxLayout.addWidget(HorizontalLine())
         vBoxLayout.addWidget(self.tableWidget, stretch=8)
-        vBoxLayout.addWidget(self.labelTroubleshooting)
-        vBoxLayout.addWidget(HorizontalLine())
 
-        hBoxLayout = QHBoxLayout()
-
-        hBoxLayout.addWidget(self.checkboxSetVoltageSign, stretch=8)
-        hBoxLayout.addWidget(self.pushButtonResetQPS)
-        vBoxLayout.addLayout(hBoxLayout)
-
-        hBoxLayout = QHBoxLayout()
-        hBoxLayout.addWidget(self.comboBoxTestConnection)
-        hBoxLayout.addWidget(self.pushButtonTestConnection)
-        hBoxLayout.addWidget(self.labelTestConnection)
-        vBoxLayout.addLayout(hBoxLayout, stretch=1)
 
     def manualLog(self):
         note, ok = QInputDialog.getText(self, 'Manual log entry', 'Input note then press OK                  ')
         if ok:
             self.log_signal.emit('Note', note)
 
-    def displaySerialDeviceStatus(self, device, connected):
-        if connected:
-            self.labelTestConnection.setText('{} connected!'.format(device))
-        else:
-            self.labelTestConnection.setText('{} not connected!'.format(device))
-
     def addLogEntry(self, when, what, comment):
         self.tableWidget.insertRow(0)
         self.tableWidget.setItem(0, 0, QTableWidgetItem(when))
         self.tableWidget.setItem(0, 1, QTableWidgetItem(what))
         self.tableWidget.setItem(0, 2, QTableWidgetItem(comment))
-
-    def checkBoxSetVoltageSign_clicked(self):
-        if self.checkboxSetVoltageSign.isChecked():
-            self.setvoltagesign_signal.emit(-1)
-        else:
-            self.setvoltagesign_signal.emit(1)
