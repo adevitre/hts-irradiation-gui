@@ -2,7 +2,7 @@
 
     A library to load, plot and fit Critical Current (Ic) and Critical Temperature (Tc) of REBCO coated conductors.
     @author Alexis Devitre (devitre@mit.edu)
-    @modified 2024/09/03
+    @modified 2025/07/14
 '''
 import hts_misc
 import hts_fitfunctions as ff
@@ -108,7 +108,6 @@ def readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vThre
             elif fformat == 'tuv':
                 current = np.log(current[positiveIV])
                 voltage = np.log(voltage[positiveIV])
-                temperature = temperature[positiveIV]
             
             stable = stable[positiveIV]
             inRange = np.ones(len(current), dtype=bool)
@@ -241,8 +240,9 @@ def fitIV(current, voltage, vc=.2e-6, function='powerLaw', p0=[], noiseLevel=1e-
     
     if function == 'powerLaw':
         if p0 == []: p0 = [0.95*np.nanmax(current), 25.]
-        popt, pcov = curve_fit(ff.powerLaw, current, voltage, p0=p0, sigma=yerr, absolute_sigma=True)
-        residuals = voltage - ff.powerLaw(current, *popt)
+        valid = current > 0
+        popt, pcov = curve_fit(ff.powerLaw, current[valid], voltage[valid], p0=p0, sigma=yerr[valid], absolute_sigma=True)
+        residuals = voltage[valid] - ff.powerLaw(current[valid], *popt)
     else:
         valid = (np.log(vc) <= voltage)
         current, voltage, yerr = current[valid], voltage[valid], yerr[valid]
@@ -311,7 +311,6 @@ def correctBackground(current, voltage, vc=.2e-6, ic=30, n=30, vThreshold=1e-7, 
     iThreshold, newThreshold, tolerance, counter = ic*(vThreshold/vc)**(1/n), 1e6, 0.01, 1
     while((counter < 5) and (np.abs(iThreshold-newThreshold) > tolerance)):
         iThreshold = newThreshold
-    
         cut = (current < ic*(vThreshold/vc)**(1./n))
         ccut, vcut = current[cut], voltage[cut]
         if (len(vcut) > 10):
@@ -331,8 +330,13 @@ def correctBackground(current, voltage, vc=.2e-6, ic=30, n=30, vThreshold=1e-7, 
 
 def fitTcMeasurement(fpath, wsz=10, fit_range=None, vb=False):
     tc, data = np.nan, readTV(fpath)
+    
     if fit_range is not None:
         data = data[(fit_range[0] < data.sampleT) & (data.sampleT < fit_range[1])]
+    
+    if data.voltage.iloc[data.voltage.abs().argmax()] < 0: # Invert voltage sign if negative
+        data['voltage']*=-1
+        
     xsmooth = np.linspace(data.sampleT.min(), data.sampleT.max(), 100000)
     rdata = data.rolling(wsz).mean()
     
@@ -340,7 +344,7 @@ def fitTcMeasurement(fpath, wsz=10, fit_range=None, vb=False):
     cut = np.isfinite(vdT).values
     temperature, vdT = rdata.sampleT[cut], vdT[cut]
     
-    popt, pcov = curve_fit(ff.gaussian, temperature, vdT, p0=[2, rdata.sampleT[(rdata.voltage-rdata.voltage.max()/2).abs().argmin()], 1])
+    popt, pcov = curve_fit(ff.gaussian, temperature, vdT, p0=[2, rdata.sampleT.iloc[(rdata.voltage-rdata.voltage.max()/2).abs().argmin()], 1])
     ysmooth = ff.gaussian(xsmooth, *popt)
     tc = xsmooth[np.argmax(ysmooth)]
     vtc = rdata.voltage.iloc[(rdata.sampleT-tc).abs().argmin()]
@@ -541,9 +545,10 @@ def getIcT(fpaths, function='linear', fig=None, label=None, color='k', fit=False
     else:
         fig, ax = None, None
 
-    ics, ns, temperatures, filepaths, timeends, popt = [], [], [], [], [], []
+    ics, ns, temperatures, filepaths, timeends, popt_ic, popt_n = [], [], [], [], [], [], []
     
     for fpath in fpaths:
+        
         try:
             data = readIV(fpath, fformat='mit', logIV=False, vc=2e-7, maxV=20e-6, iMin=0, vb=False)
             ic, n, current, voltage, chisq, pcov = fitIcMeasurement(fpath, function=function)
@@ -563,15 +568,26 @@ def getIcT(fpaths, function='linear', fig=None, label=None, color='k', fit=False
         except Exception as e:
             if vb: print(fpath, '\n', e)
     
-    temperatures, ics = np.array(temperatures), np.array(ics)
-    cut = (temperatures != np.nan) & (ics != np.nan)
-    
+    temperatures, ics, ns = np.array(temperatures), np.array(ics), np.array(ns)
+    cut = (~np.isnan(temperatures)) & (~np.isnan(ics)) & (~np.isnan(ns))
+
+    data = pd.DataFrame({'fpath': filepaths, 'temperature': temperatures, 'ic': ics, 'n': ns, 'timeends': timeends})
+    data['temperature_group'] = pd.cut(data['temperature'], bins=np.arange(0.3, 93.6, 0.2), right=False)
+   
     if fit:
-        popt, pcov = curve_fit(ff.cubic, temperatures[cut], ics[cut])
+        aggregates = data[cut].drop('fpath', axis=1).groupby(['temperature_group']).agg(['mean', 'std', 'count']).dropna()
+        aggregates.columns = ['_'.join(col) for col in aggregates.columns]
+        aggregates.drop(['temperature_count', 'ic_count', 'n_count', 'timeends_mean', 'timeends_std'], axis=1, inplace=True)
+        aggregates.rename(columns={'timeends_count': 'file_count'}, inplace=True)
+        
+        popt_ic, pcov_ic = curve_fit(ff.quadratic, aggregates.temperature_mean, aggregates.ic_mean, sigma=aggregates.ic_std, absolute_sigma=True)
+        popt_n, pcov_n = curve_fit(ff.cubic, aggregates.temperature_mean, aggregates.n_mean, sigma=aggregates.n_std, absolute_sigma=True)
+        
     if vb:
         if fit:
             xsmooth = np.linspace(0, 100, 10000)
             ax.plot(xsmooth, ff.cubic(xsmooth, *popt), marker='None', linestyle='-', linewidth=4, alpha=.2, color=color)
+            
         ax.plot(temperatures, ics, marker='+', linestyle='None', label=label, color=color)
         ax.set_xlabel('Temperature [K]')
         ax.set_ylabel('Critical current [A]')
@@ -580,6 +596,5 @@ def getIcT(fpaths, function='linear', fig=None, label=None, color='k', fit=False
         
         ax.legend(loc='best')
     
-    data = pd.DataFrame({'fpath': filepaths, 'temperature': temperatures, 'ic': ics, 'n':n, 'timeends': timeends})
     
-    return fig, ax, data, popt
+    return fig, ax, data, popt_ic, popt_n

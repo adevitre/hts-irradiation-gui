@@ -7,13 +7,16 @@ def affine(x, a):
 def linear(x, a, b):
     return a*x+b
 
+def norm_linear(x, a):
+    return 1 - a*x
+    
 def log_linear(x, a, b):
     return a*np.log(x)+b
 
-def square(x, a, b, c):
-    return a*x**2+b*x+c
+def quadratic(x, a, b, c):
+    return a*np.pow(x, 2)+b*x+c
 
-def square2(x, a, b):
+def quadratic2(x, a, b):
     return a*(x-20)**2+b*(x-20)+1
 
 def cubic(x, a, b, c, d):
@@ -28,6 +31,9 @@ def poly5(x, a, b, c, d, e):
 def inverse(x, a, b, c, d):
     return b+a/(c*x+d)
 
+def inverse_cubic(x, a, b, c):
+    return a/(b*x**3) + c
+    
 def powerLaw(i, ic, n):
     return 2e-7*(i/ic)**n
 
