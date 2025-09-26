@@ -6,11 +6,13 @@
     
 '''
 
+import numpy as np
+import matplotlib.pyplot as plt
 import hts_fitting as hts
 import hts_fitfunctions as ff
 import ipywidgets as widgets
 
-def showcaseIVs(fpaths, style='loglog', vMax=20e-6, bounds=None, titles=None, vb=False):
+def showcaseIVs(fpaths, fformat='mit', style='loglog', vMax=20e-6, bounds=None, titles=None, vb=False):
     fig, ax = plt.subplots(figsize=(9, 4))
     def on_spinbox_value_change(change, ax):
         try:
@@ -20,7 +22,7 @@ def showcaseIVs(fpaths, style='loglog', vMax=20e-6, bounds=None, titles=None, vb
                 ax.set_title(f.split('/')[-1], fontsize=12)
             else:
                 ax.set_title(titles[spinbox.value], fontsize=12)
-            data = hts.readIV(f)
+            data = hts.readIV(f, fformat=fformat)
             if style == 'loglog':
                 ic, n, current, voltage, chisq, pcov = hts.fitIcMeasurement(f, function='linear', vMax=vMax)
                 ax.loglog(data.current, 1e6*data.voltage, color='lightgray', marker='+', label='raw data')
@@ -28,7 +30,7 @@ def showcaseIVs(fpaths, style='loglog', vMax=20e-6, bounds=None, titles=None, vb
                 xsmooth = np.linspace(np.min(current), np.max(current), 10000)
                 cut = voltage > .2e-6
                 ax.loglog(current[cut], 1e6*voltage[cut], color='b', marker='+')
-                ax.loglog(xsmooth, 1e6*ff.powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label='powerLaw fit')
+                ax.loglog(xsmooth, 1e6*ff.powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label=r'loglog fit: Ic = {:4.2f}, n = {:4.2f}'.format(ic, n))
                 ax.set_ylim(1e-2, 1e2)
             else:
                 ic, n, current, voltage, chisq, pcov = hts.fitIcMeasurement(f, function='powerLaw', vMax=vMax)
@@ -36,11 +38,11 @@ def showcaseIVs(fpaths, style='loglog', vMax=20e-6, bounds=None, titles=None, vb
                 ax.plot(current, 1e6*voltage, color='k', marker='+', label='corrected voltage')
                 xsmooth = np.linspace(np.min(current), np.max(current), 10000)
                 ax.plot(current, 1e6*voltage, color='b', marker='+')
-                ax.plot(xsmooth, 1e6*ff.powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label='powerLaw fit')
+                ax.plot(xsmooth, 1e6*ff.powerLaw(xsmooth, ic, n), linewidth=3, alpha=.2, color='b', label=r'powerLaw fit: Ic = {:4.2f}, n = {:4.2f}'.format(ic, n))
                 ax.set_ylim(-.5, 3)
             xmax = np.ceil(np.max(data.current)) + (5-np.ceil(np.max(data.current))%5)
             ax.set_xlim(0.001, xmax)
-            ax.axhline(0.2, color='k', linestyle=':', label='$\mathrm{E_c}$ = 1 uV/cm')
+            ax.axhline(0.2, color='k', linestyle=':', label=r'$\mathrm{E_c}$ = 1 uV/cm')
             ax.legend() 
             ax.set_xlabel('Current [A]')
             ax.set_ylabel('Voltage [uV]')
@@ -56,8 +58,7 @@ def showcaseIVs(fpaths, style='loglog', vMax=20e-6, bounds=None, titles=None, vb
     spinbox.value = 0
     
     
-    
-def showcaseTVs(fpaths, vb=False):
+def showcaseTVs(fpaths, wsz=1, vb=False):
     fig, ax = plt.subplots(figsize=(9, 4))
     def on_spinbox_value_change(change, ax):
         try:
@@ -65,7 +66,7 @@ def showcaseTVs(fpaths, vb=False):
             f = fpaths[spinbox.value]
             ax.set_title(f.split('/')[-1], fontsize=14)
             data = hts.readTV(f)
-            ax.plot(data.sampleT, 1e6*data.voltage, color='k', marker='+', label='raw data')
+            ax.plot(data.sampleT, 1e6*data.rolling(wsz).mean().voltage, color='k', marker='+', label='raw data')
             ax.axhline(0.2)
             ax.legend()
             ax.set_xlim(60, 90)
