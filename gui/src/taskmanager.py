@@ -419,14 +419,39 @@ class TaskManager(QObject):
                         self.stabilizeTemperature(setTemperature=pidSensorT-numpy.nanmean(deltaT), rampRate=0, stabilizationTime=int(params[12])/2, stabilizationMargin=float(params[8]), vb=False)
 
                 elif action == 'Wait':
-                    waitTime = int(params[1])
-                    for t in range(waitTime+1):
-                        time.sleep(1)
+                    waitTime, t = int(params[1]), 0
+
+                    try:
+                        threshold, current = float(params[5]), self.dm.getLatestValue('pressure')
+                    except Exception as e:
+                        threshold, current = 2e3, 0
+
+                    while (t < waitTime+1) | (current > threshold):
+                        current = self.dm.getLatestValue('pressure')
                         if self.sequenceRunning:
-                            self.log_signal.emit('SequenceUpdate', 'Seconds elapsed {} of {} /{}/{}'.format(t, waitTime, t, waitTime))
+                            if t < waitTime+1:
+                                time.sleep(1)
+                                t+=1
+                                self.log_signal.emit('SequenceUpdate', 'Seconds elapsed {} of {} /{}/{}'.format(t, waitTime, t, waitTime))
+                            else:
+                                time.sleep(3)
+                                self.log_signal.emit('SequenceUpdate', 'Waiting for pressure threshold {} torr, current {} torr /{}/{}'.format(threshold, current, t, waitTime))
                         else:
                             self.log_signal.emit('SequenceUpdate', 'Wait canceled by user. Seconds elapsed /{}/{}'.format(t, waitTime))
                             break
+                elif action == 'TriggerRelays':
+                    if params[2] == 'On':
+                        self.hm.setCooler(on=True)
+                    else:
+                        self.hm.setCooler(on=False)
+                    if params[5] == 'On':
+                        self.hm.insertFaradayCup(inserted=True)
+                    else:
+                        self.hm.insertFaradayCup(inserted=False)
+                    if params[8] == 'On':
+                        self.hm.openGateValve(opened=True)
+                    else:
+                        self.hm.openGateValve(opened=False)
 
                 elif action == 'Label':
                     commonLabel = params[1]
@@ -435,7 +460,7 @@ class TaskManager(QObject):
                     self.warmup()
                     self.log_signal.emit('SequenceUpdate', 'Warming up the system /{}/{}'.format(self.dm.getLatestValue('Target Temperature'), int(self.warmupTemperature)))
                             
-                    while (self.dm.getLatestValue('Target Temperature') < self.warmupTemperature):
+                    while (self.dm.getLatestValue('Sample Temperature') < self.warmupTemperature):
                         if self.sequenceRunning:
                             time.sleep(1)
                         else:

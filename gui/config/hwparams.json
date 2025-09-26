@@ -21,11 +21,11 @@
       "manual": "../manuals/FAST-PS-1K5 - User's Manual v2.3.pdf",
       "name": "CEAN Current Source FAST-PS-M 10006",
       "parity": "O",
-      "port": "/dev/ttyUSB1",
+      "port": "/dev/ttyUSB4",
       "response": "FAST-PS-M 10006",
       "stopbits": 1,
       "timeout": 1,
-      "xonxoff": false
+      "xonxoff": true
     },
     "current_source_tc": {
       "baudrate": 57600,
@@ -130,7 +130,7 @@
       "manual": "../manuals/LS336.pdf",
       "name": "LakeShore 336 Temperature Controller",
       "parity": "O",
-      "port": "/dev/ttyUSB2",
+      "port": "/dev/ttyUSB3",
       "response": "LSCI,MODEL336",
       "setp_pattern": "[-+]?[0-9]*\\.[0-9]*",
       "stopbits": 1,
