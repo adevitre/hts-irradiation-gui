@@ -34,7 +34,7 @@ class HardwareManager(QObject):
         self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')
         
         self.vs = VoltageSource()
-        self.csCAEN = CurrentSourceCAEN()
+        self.csCAEN = None #CurrentSourceCAEN(serialDevice=False)
         self.csTDK = None #CurrentSourceTDK()
         self.cs100A = CurrentSource100A(self.hardware_parameters["a"], self.hardware_parameters["b"], self.hardware_parameters["shuntR"], self.vs, self.csCAEN, self.csTDK)
         self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50))

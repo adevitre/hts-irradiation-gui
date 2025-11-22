@@ -4,7 +4,7 @@ from device import Device
 '''
     A SerialDevice class for communications with a FlexRax4000 pressure monitor.
     
-    @author Alexis Devitre, David Fischer
+    @author Alexis Devitre
     @lastModified 21/08/2021
 '''
 class PressureMonitor(Device):

@@ -248,7 +248,7 @@ class Tab_Devices(QWidget):
                 data['devices'][self.device_key]['baudrate'] = int(self.lineEditBaudRate.text())
                 data['devices'][self.device_key]['bytesize'] = int(self.lineEditByteSize.text())
                 data['devices'][self.device_key]['ending'] = self.lineEditEnding.text()
-                data['devices'][self.device_key]['ethernet_port'] = self.lineEditETHPort.text()
+                data['devices'][self.device_key]['ethernet_port'] = int(self.lineEditETHPort.text())
                 data['devices'][self.device_key]['xonxoff'] = bool(self.lineEditFlowControl.text())
                 data['devices'][self.device_key]['greeting'] = self.lineEditGreeting.text()
                 data['devices'][self.device_key]['parity'] = self.lineEditParity.text()

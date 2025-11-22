@@ -6,6 +6,8 @@ from listwidget import ListWidget
 from addIcStepWindow import AddIcStepWindow
 from addTcStepWindow import AddTcStepWindow
 from addTemperatureStepWindow import AddTemperatureStepWindow
+from addWaitStepWindow import AddWaitStepWindow
+from addRelayStepWindow import AddRelayStepWindow
 from PyQt5.QtWidgets import QWidget, QLineEdit, QListWidgetItem, QProgressBar, QGridLayout, QHBoxLayout, QHeaderView, QAbstractItemView, QPushButton, QSpinBox, QDoubleSpinBox, QLabel, QInputDialog, QFileDialog, QMessageBox
 
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
@@ -60,35 +62,43 @@ class Tab_Sequences(QWidget):
         self.progressStatus = QProgressBar()
         self.progressStatus.setMinimum(0)
 
+        button_size = 120
+
         self.pushButtonIc = QPushButton()
-        self.pushButtonIc.setFixedSize(150, 150)
+        self.pushButtonIc.setFixedSize(button_size, button_size)
         self.pushButtonIc.clicked.connect(lambda: self.pushButtonIcPressed())
         self.pushButtonIc.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/ic.png'))
         self.pushButtonIc.setIconSize(QSize(100,100))
 
         self.pushButtonTc = QPushButton()
-        self.pushButtonTc.setFixedSize(150, 150)
+        self.pushButtonTc.setFixedSize(button_size, button_size)
         self.pushButtonTc.clicked.connect(lambda: self.pushButtonTcPressed())
         self.pushButtonTc.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/tc.png'))
         self.pushButtonTc.setIconSize(QSize(100,100))
 
         self.pushButtonWait = QPushButton()
-        self.pushButtonWait.setFixedSize(150, 150)
+        self.pushButtonWait.setFixedSize(button_size, button_size)
         self.pushButtonWait.clicked.connect(lambda: self.pushButtonWaitPressed())
         self.pushButtonWait.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/wait.png'))
-        self.pushButtonWait.setIconSize(QSize(150,150))
+        self.pushButtonWait.setIconSize(QSize(100,100))
 
         self.pushButtonLabel = QPushButton()
-        self.pushButtonLabel.setFixedSize(150, 150)
+        self.pushButtonLabel.setFixedSize(button_size, button_size)
         self.pushButtonLabel.clicked.connect(lambda: self.pushButtonLabelPressed())
         self.pushButtonLabel.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/label.png'))
         self.pushButtonLabel.setIconSize(QSize(100,100))
         
+        self.pushButtonRelays = QPushButton()
+        self.pushButtonRelays.setFixedSize(button_size, button_size)
+        self.pushButtonRelays.clicked.connect(lambda: self.pushButtonRelaysPressed())
+        self.pushButtonRelays.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/relay.png'))
+        self.pushButtonRelays.setIconSize(QSize(100, 100))
+
         self.pushButtonTemperature = QPushButton()
-        self.pushButtonTemperature.setFixedSize(150, 150)
+        self.pushButtonTemperature.setFixedSize(button_size, button_size)
         self.pushButtonTemperature.clicked.connect(lambda: self.pushButtonTemperaturePressed())
         self.pushButtonTemperature.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/setTemp.png'))
-        self.pushButtonTemperature.setIconSize(QSize(150, 150))
+        self.pushButtonTemperature.setIconSize(QSize(100, 100))
 
         self.pushButtonSave = QPushButton('Save Sequence...')
         self.pushButtonSave.clicked.connect(lambda: self.saveSequence())
@@ -116,9 +126,11 @@ class Tab_Sequences(QWidget):
         gridLayout.setAlignment(self.pushButtonIc, Qt.AlignCenter)
         gridLayout.addWidget(self.pushButtonTc, 5, 0, 1, 1)
         gridLayout.setAlignment(self.pushButtonTc, Qt.AlignCenter)
-        gridLayout.addWidget(self.pushButtonLabel, 6, 0, 1, 1)
+        gridLayout.addWidget(self.pushButtonRelays, 6, 0, 1, 1)
+        gridLayout.setAlignment(self.pushButtonRelays, Qt.AlignCenter)
+        gridLayout.addWidget(self.pushButtonLabel, 7, 0, 1, 1)
         gridLayout.setAlignment(self.pushButtonLabel, Qt.AlignCenter)
-        gridLayout.addLayout(horizontalLayout, 7, 0, 1, 1)
+        gridLayout.addLayout(horizontalLayout, 8, 0, 1, 1)
         gridLayout.setAlignment(horizontalLayout, Qt.AlignCenter)
         gridLayout.addWidget(self.pushButtonExecute, 9, 0)
         gridLayout.setAlignment(self.pushButtonExecute, Qt.AlignCenter)
@@ -155,9 +167,15 @@ class Tab_Sequences(QWidget):
         self.prompt.show()
 
     def pushButtonWaitPressed(self):
-        value, ok = QInputDialog.getInt(self, 'Wait', 'Specify wait time in seconds', value=600, min=1, max=436800, step=600)
-        if ok: self.addStep('Wait {} seconds'.format(value))
+        self.prompt = AddWaitStepWindow()
+        self.prompt.ok_signal.connect(self.addStep)
+        self.prompt.show()
 
+    def pushButtonRelaysPressed(self):
+        self.prompt = AddRelayStepWindow()
+        self.prompt.ok_signal.connect(self.addStep)
+        self.prompt.show()
+        
     def pushButtonTemperaturePressed(self):
         self.prompt = AddTemperatureStepWindow()
         self.prompt.ok_signal.connect(self.addStep)
