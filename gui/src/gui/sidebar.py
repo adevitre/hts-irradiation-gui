@@ -33,6 +33,7 @@ class Sidebar(QWidget):
     chamberlight_signal = pyqtSignal(bool)
     targetlight_signal = pyqtSignal(bool)
     settemp_signal = pyqtSignal(float)
+    set_field_signal = pyqtSignal(float)
     faradaycup_signal = pyqtSignal(bool)
     reset_signal = pyqtSignal()
 
@@ -56,6 +57,8 @@ class Sidebar(QWidget):
         self.labelTargetTemperature = QRadioButton(self)
         self.labelHolderTemperature = QRadioButton(self)
         self.labelSpareTemperature = QRadioButton(self)
+
+        self.label_magnetic_field = QRadioButton(self) # This is the calculated central solenoid field based on the current through the windings
         
         self.labelHeaterPower.setStyleSheet('color: black; font-size: 20px;')
         self.labelPressure.setStyleSheet('color: forestgreen; font-size: 20px;')
@@ -79,11 +82,14 @@ class Sidebar(QWidget):
         
         self.labelTargetTemperature.setChecked(True)
 
+        self.label_magnetic_field.setStyleSheet('QRadioButton {background-color: rgba(255, 255, 255, 0); color: magenta; font-size: 20px}')
+        
         spb_font = QFont()
         spb_font.setPointSize(22)
         spb_font.setBold(True)
         spb_font.setWeight(75)
         
+        # Set up the spinbox and button for manual temperature control
         self.QDoubleSpinBox_setTemperature = QDoubleSpinBox(self)
         self.QDoubleSpinBox_setTemperature.setDecimals(2)
         self.QDoubleSpinBox_setTemperature.setRange(0, 320)
@@ -98,7 +104,24 @@ class Sidebar(QWidget):
         self.pushButtonSetTemperature.setShortcut('Ctrl+Return')
         self.pushButtonSetTemperature.setEnabled(False)
         self.pushButtonSetTemperature.setStyleSheet(self.styles['QPushButton_disable'])
+
+        # Set up the spinbox and button for manual magnetic field control
+        self.QDoubleSpinBox_setField = QDoubleSpinBox(self)
+        self.QDoubleSpinBox_setField.setDecimals(1)
+        self.QDoubleSpinBox_setField.setRange(0, 14)
+        self.QDoubleSpinBox_setField.setButtonSymbols(QDoubleSpinBox.NoButtons)
+        self.QDoubleSpinBox_setField.setAlignment(Qt.AlignCenter)
+        self.QDoubleSpinBox_setField.setFont(spb_font)
+        self.QDoubleSpinBox_setField.setEnabled(False)
+
+        self.pushButton_setField = QPushButton("Set magnetic field")
+        self.pushButton_setField.clicked.connect(lambda: self.set_field_signal.emit(self.QDoubleSpinBox_setTemperature.value()))
+        self.pushButton_setField.setStyleSheet(self.styles['QPushButton_simulation'])
+        self.pushButton_setField.setShortcut('Ctrl+Shift+Return')
+        self.pushButton_setField.setEnabled(False)
+        self.pushButton_setField.setStyleSheet(self.styles['QPushButton_disable'])
         
+        # Set up the controls for Farday cup actuation
         self.pushButtonFaradayCup = QPushButton()
         self.pushButtonFaradayCup.clicked.connect(self.pushButtonFaradayCup_clicked)
         self.pushButtonFaradayCup.setIcon(QIcon(os.getcwd()+'/images/BeamOff.png'))
@@ -138,23 +161,31 @@ class Sidebar(QWidget):
         self.comboBoxSetTurboValve.activated.connect(self.comboBoxSetTurboValve_activated)
         self.comboBoxSetTurboValve.setEnabled(True)
         
+        #
+        # Add controls to layouts for sidebar
+        #
+        # HBox layout for temperature control
+        verticalLayoutSideBar.addWidget(HorizontalLine())
         horizontalLayout = QHBoxLayout()
         horizontalLayout.addWidget(self.QDoubleSpinBox_setTemperature)
         horizontalLayout.addWidget(self.pushButtonSetTemperature)
         verticalLayoutSideBar.addLayout(horizontalLayout)
-        
+
         verticalLayoutSideBar.addWidget(HorizontalLine())
         verticalLayoutSideBar.addWidget(self.labelSampleTemperature)
         verticalLayoutSideBar.addWidget(self.labelHolderTemperature)
         verticalLayoutSideBar.addWidget(self.labelTargetTemperature)
         verticalLayoutSideBar.addWidget(self.labelSpareTemperature)
-        
-        verticalLayoutSideBar.addWidget(HorizontalLine())
         verticalLayoutSideBar.addWidget(self.labelHeaterPower)
         
+        # HBox layout for magnetic field control
         verticalLayoutSideBar.addWidget(HorizontalLine())
-        verticalLayoutSideBar.addWidget(self.labelPressure)
-        
+        horizontalLayout = QHBoxLayout()
+        horizontalLayout.addWidget(self.QDoubleSpinBox_setField)
+        horizontalLayout.addWidget(self.pushButton_setField)
+        verticalLayoutSideBar.addLayout(horizontalLayout)
+        verticalLayoutSideBar.addWidget(self.label_magnetic_field)
+
         verticalLayoutSideBar.addWidget(HorizontalLine())
         horizontalLayout2 = QHBoxLayout()
         horizontalLayout2.addStretch()
@@ -168,9 +199,14 @@ class Sidebar(QWidget):
         horizontalLayout3.addStretch()
         horizontalLayout3.addWidget(self.pushButtonTargetLight)
         horizontalLayout3.addWidget(self.pushButtonChamberLight)
-        horizontalLayout3.addWidget(self.comboBoxSetTurboValve)
         horizontalLayout3.addStretch()
         verticalLayoutSideBar.addLayout(horizontalLayout3)
+        
+        # Set upthe turbo valve switch and pressure sensor controls
+        verticalLayoutSideBar.addWidget(HorizontalLine())
+        verticalLayoutSideBar.addWidget(self.comboBoxSetTurboValve)
+        verticalLayoutSideBar.addWidget(self.labelPressure)
+        verticalLayoutSideBar.addWidget(HorizontalLine())
         
         self.pushButtonResetQPS = QPushButton('Reset QPS')
         self.pushButtonResetQPS.clicked.connect(lambda: self.reset_signal.emit())
@@ -307,7 +343,7 @@ class Sidebar(QWidget):
         self.labelTargetTemperature.setText('{: <30}\t{: >20.2f}{: >5}'.format('Target temperature:', values[2], 'K'))
         self.labelHolderTemperature.setText('{: <30}\t{: >20.2f}{: >5}'.format('Holder temperature:', values[3], 'K'))
         self.labelSpareTemperature.setText('{: <30}\t{: >20.2f}{: >5}'.format('Spare temperature:', values[4], 'K'))
-        self.labelHeaterPower.setText('{: <30}\t{: >20.2f}{: >5}'.format('Heating power:', values[5], 'W'))
+        self.labelHeaterPower.setText('{: <30}\t{: >20.2f}{: >5}'.format('   Heating power:', values[5], 'W')) # Leave three whitespaces to align with label rather than radio buttons
         self.labelPressure.setText('{: <30}\t{: >20.2e}\t{: >10}'.format('Pressure:', values[6], 'torr'))
         QApplication.processEvents()
         

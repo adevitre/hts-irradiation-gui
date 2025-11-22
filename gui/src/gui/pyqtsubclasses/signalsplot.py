@@ -16,7 +16,7 @@ class SignalsPlot(FigureCanvasQTAgg):
     @last-update January 2025
     
     '''
-    def __init__(self, nPlots=1, parent=None, xlabel='', ylabels=['']):
+    def init__(self, nPlots=1, parent=None, xlabel='', ylabels=['']):
         self.fig, self.axes = matplotlib.pyplot.subplots(nPlots, 1, sharex=True, tight_layout=True)
         super(SignalsPlot, self).__init__(self.fig)
         self.xlabel, self.ylabels = xlabel, ylabels
