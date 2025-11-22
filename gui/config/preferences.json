@@ -9,6 +9,7 @@
   "timeaxis_step": 600,
   "sampling_period_tc": 1,
   "sampling_period_pm": 3,
+  "sampling_period_mc": 3,
   "sampling_period_nv": 0.4,
   "datafileMaxSize": 50,
   "waitBetweenSuccessiveIV": 0,

@@ -42,10 +42,11 @@ class TaskManager(QObject):
         self.sequenceRunning = False
         
         # timers
-        self.nvTimer, self.tcTimer, self.pmTimer, self.plotTimer, self.dataBackupTimer  = QTimer(), QTimer(), QTimer(), QTimer(), QTimer()
+        self.nvTimer, self.tcTimer, self.pmTimer, self.mcTimer, self.plotTimer, self.dataBackupTimer  = QTimer(), QTimer(), QTimer(), QTimer(), QTimer(), QTimer()
         self.nvTimer.timeout.connect(lambda: self.threadpool.start(Task(self.updateNvReadings)))
         self.tcTimer.timeout.connect(lambda: self.threadpool.start(Task(self.updateTcReadings)))
         self.pmTimer.timeout.connect(lambda: self.threadpool.start(Task(self.updatePmReadings)))
+        self.mcTimer.timeout.connect(lambda: self.threadpool.start(Task(self.updateMcReadings)))
         self.plotTimer.timeout.connect(lambda: self.threadpool.start(Task(self.dm.updateEnvironmentPlots)))
         self.dataBackupTimer.timeout.connect(lambda: self.threadpool.start(Task(self.dm.saveEnvironmentData)))
     
@@ -55,10 +56,12 @@ class TaskManager(QObject):
         self.ln2Measurements = ln2Measurements
         self.updateTcReadings() # Necessary: otherwise the dataframes are None and plot update fails.
         self.updatePmReadings()
+        self.updateMcReadings()
         
         if not self.ln2Measurements:
             self.tcTimer.start(int(self.preferences['sampling_period_tc']*1000))
             self.pmTimer.start(int(self.preferences['sampling_period_pm']*1000))
+            self.mcTimer.start(int(self.preferences['sampling_period_mc']*1000))
             self.plotTimer.start(1000)
             self.dataBackupTimer.start(int(self.preferences['saverate']*1000)) # TQp data backup, user specified in seconds
         else:
@@ -68,9 +71,9 @@ class TaskManager(QObject):
         if not self.ln2Measurements:
             self.tcTimer.stop()
             self.pmTimer.stop()
+            self.mcTimer.stop()
             self.plotTimer.stop()
             self.dataBackupTimer.stop()
-
 
     def updateTcReadings(self):
         if not self.ln2Measurements:
@@ -79,7 +82,6 @@ class TaskManager(QObject):
             setpointT, sampleT, targetT, holderT, spareT, heatingPower = 77.3, 77.3, 0, 0, 0, 0.
         self.dm.updateTcReadings(setpointT, sampleT, targetT, holderT, spareT, heatingPower)
         
-
     def updatePmReadings(self, ln2Measurements=False):
         if not self.ln2Measurements:
             pressure = self.hm.getPressureReading()
@@ -87,6 +89,10 @@ class TaskManager(QObject):
             pressure = 760.
         self.dm.updatePmReadings(pressure)
     
+    def updateMcReadings(self):
+        field = self.hm.getMagneticFieldReading()
+        self.dm.updateMcReadings(field)
+
     def connectFourPointProbe(self, connected=True, current_source=HARDWARE_PARAMETERS['LABEL_LS121']):
         """
             connectFourPointProbe connects or disconnects the transport measurement system for Ic, Tc, and Vt measurements.

@@ -11,10 +11,12 @@ from cs_tdk import CurrentSourceTDK
 from currentsource100A import CurrentSource100A
 from currentsource100mA import CurrentSource100mA
 from temperaturecontroller import TemperatureController
+from magnetcontroller import MagnetController
 from pressuremonitor import PressureMonitor
 from voltagesource import VoltageSource
 
 TEMPERATURE_CONTROLLER = 'LakeShore 336 Temperature Controller'
+MAGNET_CONTROLLER = 'American Magnetics Model 430'
 CURRENT_SOURCE = 'LakeShore 121 Current Source'
 POWER_SUPPLY = 'Keithley 2231-A-30-3 Power Supply'
 NANOVOLTMETER = 'Keithley 2182A Nanovoltmeter'
@@ -34,13 +36,14 @@ class HardwareManager(QObject):
         self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')
         
         self.vs = VoltageSource()
-        self.csCAEN = None #CurrentSourceCAEN(serialDevice=False)
+        self.csCAEN = CurrentSourceCAEN(serialDevice=False)
         self.csTDK = None #CurrentSourceTDK()
         self.cs100A = CurrentSource100A(self.hardware_parameters["a"], self.hardware_parameters["b"], self.hardware_parameters["shuntR"], self.vs, self.csCAEN, self.csTDK)
         self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50))
         self.relays = Relays()
         
         self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=True)
+        self.mc = MagnetController()
         self.pm = PressureMonitor(int(self.preferences["sampling_period_pm"]*1000-50))
         self.nvm = NanoVoltmeter(int(self.preferences["sampling_period_nv"]*1000-50))
         self.dmm = DMM6500(self.hardware_parameters["shuntR"], int(self.preferences["sampling_period_nv"]*1000-50))
@@ -73,6 +76,9 @@ class HardwareManager(QObject):
         if ((self.pm.igOn) & (pressure > 2.5e-3)) | ((not self.pm.igOn) & (pressure < 2.5e-3)):
             self.pm.testIgOn()                # adjust the flag if igOn and overpressure or igOff and low pressure
         return pressure
+    
+    def getMagneticFieldReading(self):
+        return 0 #self.mc.read_magnetic_field()
     
     def getTemperatureReading(self):
         sampleT, targetT, holderT, spareT = self.tc.getTemperatureReadings()
@@ -213,6 +219,8 @@ class HardwareManager(QObject):
     def testSerialConnection(self, device):
         if device == self.hardware_parameters['devices']['temperature_controller']['name']:
             connected = self.tc.testConnection()
+        elif device == self.hardware_parameters['devices']['magnet_controller']['name']:
+            connected = self.mc.testConnection()
         elif device == self.hardware_parameters['devices']['current_source_tc']['name']:
             connected = self.cs100mA.testConnection()
         elif device == self.hardware_parameters['devices']['voltagesource']['name']:
@@ -253,6 +261,9 @@ class HardwareManager(QObject):
         if device_key == 'temperature_controller':
             if self.tc is not None: del self.tc
             self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=True)
+        elif device_key == 'magnet_controller':
+            if self.mc is not None: del self.mc
+            self.mc = MagnetController()
         elif device_key == 'current_source_tc':
             if self.cs100mA is not None: del self.cs100mA
             self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50))

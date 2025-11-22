@@ -9,10 +9,10 @@
   "bridgeLength": 2,
   "devices": {
     "current_source_caen": {
-      "aout_pattern": "[-+]?[0-9]*\\.[0-9]",
       "baudrate": 57600,
       "bytesize": 7,
-      "description": "The ideal current source for our work! (a little overpriced)",
+      "aout_pattern": "[-+]?[0-9]*\\.[0-9]",
+      "description": "The ideal current source for our work!",
       "ending": "\r\n",
       "ethernet_port": 10001,
       "greeting": "VER",
@@ -26,6 +26,27 @@
       "stopbits": 1,
       "timeout": 1,
       "xonxoff": true
+    },
+    "magnet_controller": {
+      "baudrate": "n.a.",
+      "bytesize": "n.a.",
+      "setp_pattern": "[0-9]*\\.[0-9]*",
+      "trdg_pattern": "[0-9]*\\.[0-9]*",
+      "description": "Controller for the 14 T AMI magnet.",
+      "ending": "\r\n",
+      "ethernet_port": 7180,
+      "greeting": "*IDN?",
+      "image": "/images/devices/ami430_controller.png",
+      "ip": "192.168.0.11",
+      "manual": "../manuals/mn-430-rev11.pdf",
+      "name": "American Magnetics Model 430",
+      "response": "American Magnetics Model 430 IP Interface\r\nHello.",
+      "parity": "n.a.",
+      "port": "n.a.",
+      "stopbits": "n.a.",
+      "timeout": "n.a.",
+      "xonxoff": "n.a."
+
     },
     "current_source_tc": {
       "baudrate": 57600,

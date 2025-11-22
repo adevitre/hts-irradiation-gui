@@ -247,10 +247,10 @@ class GUIManager(QMainWindow):
             self.hm.connectSampleTo100A(connected=True)
             self.threadpool.start(Task(self.hm.setLargeCurrent, current, self.hardware_parameters['LABEL_TDK'], vb=True))
         
-    @pyqtSlot(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
-    def updateSignalsPlots(self, time_tc, time_pm, setpointT, sampleT, targetT, holderT, spareT, pressure, power):
-        self.environmentTools.updatePlottingArea(time_tc, time_pm, sampleT, targetT, holderT, spareT, pressure, power)
-        self.sidebar.updateValues(values=[setpointT[-1], sampleT[-1], targetT[-1], holderT[-1], spareT[-1], power[-1], pressure[-1]])
+    @pyqtSlot(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+    def updateSignalsPlots(self, time_tc, time_pm, time_mc, setpointT, sampleT, targetT, holderT, spareT, pressure, power, field):
+        self.environmentTools.updatePlottingArea(time_tc, time_pm, time_mc, sampleT, targetT, holderT, spareT, pressure, power, field)
+        self.sidebar.updateValues(values=[setpointT[-1], sampleT[-1], targetT[-1], holderT[-1], spareT[-1], power[-1], pressure[-1], field[-1]])
          
     def showHelp(self):
         with open('docs/README.txt') as f:
