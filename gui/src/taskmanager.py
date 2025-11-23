@@ -26,7 +26,7 @@ class TaskManager(QObject):
     plotSignal = pyqtSignal(float, float, str)
 
 
-    def __init__(self, dataManager, hardwareManager, threadpool, parent=None):
+    def __init__(self, dataManager, hardwareManager, threadpool, parent=None, vb=False):
         super(TaskManager, self).__init__(parent)
         
         self.threadpool = threadpool

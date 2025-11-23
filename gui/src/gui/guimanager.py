@@ -48,7 +48,7 @@ class GUIManager(QMainWindow):
         else:
             event.ignore()
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, vb=False):
         
         super(GUIManager, self).__init__(parent)
         
@@ -60,9 +60,9 @@ class GUIManager(QMainWindow):
         self.sessionStarted = False  # if False, the GUI is in DEMO mode and data has not been acquired yet
         self.updatingPlots = False
 
-        self.hm = HardwareManager()
-        self.dm = DataManager(self.threadpool)
-        self.tm = TaskManager(self.dm, self.hm, self.threadpool)
+        self.hm = HardwareManager(vb=vb)
+        self.dm = DataManager(self.threadpool, vb=vb)
+        self.tm = TaskManager(self.dm, self.hm, self.threadpool, vb=vb)
         
         self.qShortcut_calibrate100ACurrentSource = QShortcut(QKeySequence('Ctrl+C'), self)
         self.qShortcut_calibrate100ACurrentSource.activated.connect(lambda: self.calibrate100ACurrentSource())

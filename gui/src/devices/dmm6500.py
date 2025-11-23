@@ -14,7 +14,7 @@ class DMM6500:
     def __del__(self):
         print('DMM6500::__del__')
         
-    def __init__(self, rshunt, waitLock=350):
+    def __init__(self, rshunt, waitLock=350, vb=False):
         self.waitLock = waitLock
         self.rshunt = rshunt
         self.inUse = False

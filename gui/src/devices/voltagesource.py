@@ -8,8 +8,8 @@ from device import Device
 '''
 class VoltageSource(Device):
     
-    def __init__(self, waitLock=350):
-        super().__init__('voltagesource', waitLock=waitLock)
+    def __init__(self, waitLock=350, vb=False):
+        super().__init__('voltagesource', waitLock=waitLock, vb=vb)
         
         if self.ser is not None:
             self.initialize()

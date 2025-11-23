@@ -343,8 +343,13 @@ class Sidebar(QWidget):
         
     def enable(self, enabled=True):
         self.pushButtonSetTemperature.setStyleSheet(self.styles['QPushButton_simulation'])
+        self.pushButton_setField.setStyleSheet(self.styles['QPushButton_simulation'])
         self.pushButtonSetTemperature.setEnabled(enabled)
+        self.pushButton_setField.setEnabled(enabled)
+        self.QDoubleSpinBox_setTemperature.setEnabled(enabled)
+        self.QDoubleSpinBox_setField.setEnabled(enabled)
         self.pushButtonChamberLight.setEnabled(enabled)
         self.pushButtonTargetLight.setEnabled(enabled)
-        self.QDoubleSpinBox_setTemperature.setEnabled(enabled)
         self.pushButtonWarmup.setEnabled(True)
+
+        

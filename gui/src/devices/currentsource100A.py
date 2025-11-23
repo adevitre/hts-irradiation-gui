@@ -9,7 +9,7 @@ class CurrentSource100A:
         CurrentSource100A controls the 100A power supply for critical current measurements
         Note: the circuit logic to connect/disconnect this power supply to the sample is in relays.py
     '''
-    def __init__(self, a, b, shuntR, voltageSource, currentSourceCAEN, currentSourceTDK):
+    def __init__(self, a, b, shuntR, voltageSource, currentSourceCAEN, currentSourceTDK, vb=False):
         self.shuntR = shuntR
         self.vs = voltageSource
         self.csCAEN = currentSourceCAEN

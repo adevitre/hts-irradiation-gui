@@ -14,7 +14,7 @@ class Device:
         @inputs:
             device (str) - name of the device as it appears in the title of the file containing serial settings
     '''
-    def __init__(self, device, waitLock, serialDevice=True):
+    def __init__(self, device, waitLock, serialDevice=True, vb=False):
         self.waitLock = waitLock
         self.ser, self.serialDevice = None, serialDevice
         self.mutex = QMutex()
@@ -23,7 +23,7 @@ class Device:
         if self.serialDevice:
             try:
                 self.ser = serial.Serial(self.settings['port'], baudrate=self.settings['baudrate'], bytesize=self.settings['bytesize'], stopbits=self.settings['stopbits'], parity=self.settings['parity'], xonxoff=self.settings['xonxoff'], timeout=self.settings['timeout'])
-                if not self.testConnection(vb=True):
+                if not self.testConnection(vb=vb):
                     self.ser.close()
                     self.ser = None
             except Exception as e:
@@ -35,7 +35,7 @@ class Device:
                 self.ser.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 self.ser.connect((self.settings['ip'], self.settings['ethernet_port']))
                 self.closeSocket()
-                if not self.testConnection(vb=True):
+                if not self.testConnection(vb=vb):
                     self.ser = None
 
             except Exception as e:
@@ -56,20 +56,23 @@ class Device:
     
     def testConnection(self, vb=False):
         response = self.read(self.settings['greeting'])
+
+        if vb: 
+            print('DEBUG: The expected response is :', self.settings['response'])
+            print('DEBUG: The received response is : ', response)
+        
         if (re.search(self.settings['response'], response)):
             self.connected = True
-            if vb: 
-                if self.serialDevice:
-                    print(self.settings['port'] + ': {} connected!'.format(self.settings['name']))
-                else:
-                    print(self.settings['ip'] + ': {} connected!'.format(self.settings['name']))
+            if self.serialDevice:
+                print(self.settings['port'] + ': {} connected!'.format(self.settings['name']))
+            else:
+                print(self.settings['ip'] + ': {} connected!'.format(self.settings['name']))
         else:
             self.connected = False
-            if vb:
-                if self.serialDevice:
-                    print('WARNING: {} is connected to a device which is not {}'.format(self.settings['port'], self.settings['name']))
-                else:
-                    print('WARNING: {} is connected to a device which is not {}'.format(self.settings['ip'], self.settings['name']))
+            if self.serialDevice:
+                print('WARNING: {} is connected to a device which is not {}'.format(self.settings['port'], self.settings['name']))
+            else:
+                print('WARNING: {} is connected to a device which is not {}'.format(self.settings['ip'], self.settings['name']))
                 
         return self.connected
 

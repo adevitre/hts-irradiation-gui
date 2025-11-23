@@ -8,18 +8,19 @@ from device import Device
 '''
 class MagnetController(Device):
     
-    def __init__(self, serialDevice=False, waitLock=350):
-        super().__init__('magnet_controller', waitLock=waitLock, serialDevice=serialDevice)
+    def __init__(self, serialDevice=False, waitLock=350, vb=False):
+        super().__init__('magnet_controller', waitLock=waitLock, serialDevice=serialDevice, vb=vb)
         if self.ser is not None:
             self.initialize()
     
     def initialize(self):
-        self.polarity = 1
-        self.write('*rst') 
-        self.write('*cls')
-        self.write('CONFigure:FIELD:UNITS 1')  # set units to teslas
-        self.write('CONFigure:FIELD:TARGet 0') # set the magnetic field to zero
+        #self.write('*rst') 
+        #self.write('*cls')
+        #self.write('CONFigure:FIELD:UNITS 1')           # set units to teslas
+        #self.write('CONFigure:FIELD:TARGet 0')          # set the magnetic field to zero
         
+        #self.coil_constant = self.read('COILconst?')    # get the coil constant to convert current into magnetic field
+
         # EDIT THOSE!!
         #self.write("CONFigure:RAMP:RATE:FIELD")
         #self.write('CONFigure:CURRent:LIMit ')

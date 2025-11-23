@@ -7,8 +7,8 @@ from device import Device
 '''
 class TemperatureController(Device):
     
-    def __init__(self, waitLock=950, serialDevice=True):
-        super().__init__('temperature_controller', waitLock=waitLock, serialDevice=serialDevice)
+    def __init__(self, waitLock=950, serialDevice=True, vb=False):
+        super().__init__('temperature_controller', waitLock=waitLock, serialDevice=serialDevice, vb=vb)
         self.write('TLIMIT B,320')
         self.rampTemperature(rate=3, ramping=False)
         self.setHeaterOutput(on=True)

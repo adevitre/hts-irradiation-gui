@@ -15,7 +15,7 @@ class Relays:
     '''
         Implements relay function on the NUMATO Labs32 USB relay board
     '''
-    def __init__(self):
+    def __init__(self, vb=False):
         '''
             __init__ instantiates an object of class Relays
         '''

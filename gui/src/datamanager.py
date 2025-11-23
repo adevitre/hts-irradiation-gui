@@ -18,7 +18,7 @@ class DataManager(QObject):
     log_signal = pyqtSignal(str, str)
     plot_signal = pyqtSignal(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
     
-    def __init__(self, threadpool, parent=None):
+    def __init__(self, threadpool, parent=None, vb=False):
         super(DataManager, self).__init__(parent)
         
         self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')
