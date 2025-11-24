@@ -115,7 +115,7 @@ class Sidebar(QWidget):
         self.QDoubleSpinBox_setField.setEnabled(False)
 
         self.pushButton_setField = QPushButton("Set magnetic field")
-        self.pushButton_setField.clicked.connect(lambda: self.set_field_signal.emit(self.QDoubleSpinBox_setTemperature.value()))
+        self.pushButton_setField.clicked.connect(lambda: self.set_field_signal.emit(self.QDoubleSpinBox_setField.value()))
         self.pushButton_setField.setStyleSheet(self.styles['QPushButton_simulation'])
         self.pushButton_setField.setShortcut('Ctrl+Shift+Return')
         self.pushButton_setField.setEnabled(False)
@@ -216,11 +216,18 @@ class Sidebar(QWidget):
             if self.QDoubleSpinBox_setTemperature.hasFocus():
                 self.settemp_signal.emit(self.QDoubleSpinBox_setTemperature.value())
                 self.QDoubleSpinBox_setTemperature.clearFocus()
+            elif self.QDoubleSpinBox_setField.hasFocus():
+                self.settemp_signal.emit(self.QDoubleSpinBox_setField.value())
+                self.QDoubleSpinBox_setField.clearFocus()
 
     def updateSetpointDisplay(self, value):
         if not self.QDoubleSpinBox_setTemperature.hasFocus():
             self.QDoubleSpinBox_setTemperature.setValue(value)       
     
+    def updateSetpointDisplay(self, value):
+        if not self.QDoubleSpinBox_setField.hasFocus():
+            self.QDoubleSpinBox_setField.setValue(value) 
+
     def qShortcut_setTemperature_triggered(self):
         self.QDoubleSpinBox_setTemperature.setFocus()
             
@@ -338,7 +345,9 @@ class Sidebar(QWidget):
         self.labelSpareTemperature.setText('{: <30}\t{: >20.2f}{: >5}'.format('Spare temperature:', values[4], 'K'))
         self.labelHeaterPower.setText('{: <33}\t{: >20.2f}{: >7}'.format('   Heating power:', values[5], 'W')) # Leave three whitespaces to align with label rather than radio buttons
         self.labelPressure.setText('{: <30}\t{: >20.2e}\t{: >5}'.format('Pressure:', values[6], 'torr'))
-        self.label_magnetic_field.setText('{: <30}\t{: >20.2f}{: >10}'.format('Magnetic Field:', values[6], 'T'))
+        self.label_magnetic_field.setText('{: <30}\t{: >20.2f}{: >10}'.format('Magnetic Field:', values[8], 'T'))
+        if not self.QDoubleSpinBox_setField.hasFocus():
+            self.QDoubleSpinBox_setField.setValue(values[7])
         QApplication.processEvents()
         
     def enable(self, enabled=True):

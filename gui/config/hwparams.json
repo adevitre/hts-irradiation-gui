@@ -7,6 +7,20 @@
   "a": 0.19821459431856062,
   "b": -0.015305039824043774,
   "bridgeLength": 2,
+  "calibrations":{
+    "Target holder 1 (Hat)":{
+      "Input A": "21",
+      "Input B": "33",
+      "Input C": "34",
+      "Input D": "40"
+    },
+    "Target holder 2 (Rod)":{
+      "Input A": "21",
+      "Input B": "22",
+      "Input C": "25",
+      "Input D": "26"
+    }
+  },
   "devices": {
     "current_source_caen": {
       "aout_pattern": "[-+]?[0-9]*\\.[0-9]",

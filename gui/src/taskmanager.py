@@ -90,8 +90,9 @@ class TaskManager(QObject):
         self.dm.updatePmReadings(pressure)
     
     def updateMcReadings(self):
+        setpoint_field = self.hm.getMagneticFieldReading()
         field = self.hm.getMagneticFieldReading()
-        self.dm.updateMcReadings(field)
+        self.dm.updateMcReadings(setpoint_field, field)
 
     def connectFourPointProbe(self, connected=True, current_source=HARDWARE_PARAMETERS['LABEL_LS121']):
         """

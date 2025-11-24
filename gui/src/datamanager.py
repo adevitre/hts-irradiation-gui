@@ -16,7 +16,7 @@ from configure import update_json, load_json
 class DataManager(QObject):
     
     log_signal = pyqtSignal(str, str)
-    plot_signal = pyqtSignal(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+    plot_signal = pyqtSignal(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
     
     def __init__(self, threadpool, parent=None, vb=False):
         super(DataManager, self).__init__(parent)
@@ -90,11 +90,12 @@ class DataManager(QObject):
         self.t0 = time.time()
         self.tcData, self.pmData, self.paData, self.mcData = None, None, None, None
 
-    def updateMcReadings(self, field):
+    def updateMcReadings(self, setpoint_field, field):
         try:
             dt = datetime.datetime.now()
             data = {
                 'time_s': time.time()-self.t0,
+                'setpoint_field': setpoint_field,
                 'field_T': field,
                 'backedup': False
             }
@@ -218,7 +219,7 @@ class DataManager(QObject):
             pmData = self.pmData.loc[self.pmData.index[-int(np.ceil(2*self.preferences['sampling_period_pm'])+cut):]].copy(deep=True)    
             mcData = self.mcData.loc[self.mcData.index[-int(np.ceil(2*self.preferences['sampling_period_pm'])+cut):]].copy(deep=True)
 
-            self.plot_signal.emit(tcData.time_s.values, pmData.time_s.values, mcData.time_s.values, tcData.setpt_K.values, tcData.sampleT_K.values, tcData.targetT_K.values, tcData.holderT_K.values, tcData.spareT_K.values, pmData.pressure_torr.values, tcData.heaterPower_W.values, mcData.field_T.values)
+            self.plot_signal.emit(tcData.time_s.values, pmData.time_s.values, mcData.time_s.values, tcData.setpt_K.values, tcData.sampleT_K.values, tcData.targetT_K.values, tcData.holderT_K.values, tcData.spareT_K.values, pmData.pressure_torr.values, tcData.heaterPower_W.values, mcData.setpoint_field.values, mcData.field_T.values)
         except AttributeError as e:
             print('DataManager:updateEnvironmentPlots returned: ', e)
             print(self.tcData)

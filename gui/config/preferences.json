@@ -1,22 +1,21 @@
 {
-  "temporary_savefolder": "/home/htsirradiation/Documents/data/temp-folders/",
+  "TcStabilizationMargin": 1,
+  "TemperatureSensorConfiguration": "Target holder 2 (Rod)",
+  "datafileMaxSize": 50,
   "emails": [
     "dafisch@mit.edu",
     "devitre@mit.edu"
   ],
-  "saverate": 300,
-  "timeaxis_max": 3600,
-  "timeaxis_step": 600,
-  "sampling_period_tc": 1,
-  "sampling_period_pm": 3,
+  "iv_voltageThreshold": 20,
+  "path_sequences": "/home/htsirradiation/Documents/sequences/",
   "sampling_period_mc": 3,
   "sampling_period_nv": 0.4,
-  "datafileMaxSize": 50,
-  "waitBetweenSuccessiveIV": 0,
-  "iv_voltageThreshold": 20,
+  "sampling_period_pm": 3,
+  "sampling_period_tc": 1,
+  "saverate": 300,
+  "temporary_savefolder": "/home/htsirradiation/Documents/data/temp-folders/",
+  "timeaxis_max": 3600,
+  "timeaxis_step": 600,
   "tv_voltageThreshold": 1000,
-  "TcStabilizationMargin": 1,
-
-  "path_sequences": "/home/htsirradiation/Documents/sequences/"
-  
+  "waitBetweenSuccessiveIV": 0
 }

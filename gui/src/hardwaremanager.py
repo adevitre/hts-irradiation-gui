@@ -78,7 +78,10 @@ class HardwareManager(QObject):
         return pressure
     
     def getMagneticFieldReading(self):
-        return 0 #self.mc.read_magnetic_field()
+        return 0 #self.mc.get_magnetic_field()
+    
+    def get_setpoint_magnetic_field_reading(self):
+        return self.mc.get_setpoint_magnetic_field()
     
     def getTemperatureReading(self):
         sampleT, targetT, holderT, spareT = self.tc.getTemperatureReadings()
@@ -130,19 +133,26 @@ class HardwareManager(QObject):
         if vb: self.log_signal.emit('CurrentSet', 'Power supply {} set by user to {:4.2f} A'.format(currentSource, current))
         return self.cs100A.setCurrent(current, currentSource, calib, vb=vb)
     
+    def update_temperature_input_configuration(self, configuration):
+        self.tc.set_input_configuration(self.hardware_parameters['calibrations'][configuration])
+
     def enableParallelMode(self, enabled=False):
         self.cs100A.enableParallelMode(enabled=enabled)
 
     def setLargeCurrentCalibration(self, a, b):
         self.cs100A.updateCalibration(a, b)
     
+    def set_magnetic_field(self, magnetic_field):
+        self.mc.set_magnetic_field(magnetic_field)
+        self.log_signal.emit('MagSet', 'AMI Magnet field set to {:4.2f} T'.format(magnetic_field))
+
     def setTemperature(self, temperature):
         self.setSetpointTemperature(temperature)
         time.sleep(0.1)
         self.setHeaterOutput(on=True)
         if temperature < self.tc.getTargetTemperature():
             self.setCooler(on=True)
-        self.log_signal.emit('TempSet', '{:4.2f} K'.format(temperature))
+        self.log_signal.emit('TempSet', 'Target temperature set to {:4.2f} K'.format(temperature))
         
     def setSetpointTemperature(self, temperature):
         self.tc.setSetpointTemperature(temperature)

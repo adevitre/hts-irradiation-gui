@@ -42,7 +42,7 @@ class MagnetController(Device):
         except Exception as e:
             print('MagneticFieldController::set_magnetic_field raised: ', e)
 
-    def read_setpoint_magnetic_field(self):
+    def get_setpoint_magnetic_field(self):
         setpoint = numpy.nan
         try:
             r = self.read("CURRent:MAGnet?")
@@ -54,7 +54,7 @@ class MagnetController(Device):
         return setpoint
 
            
-    def read_magnetic_field(self):
+    def get_magnetic_field(self):
         central_field = numpy.nan
         try:
             r = self.read("CURRent:MAGnet?")
