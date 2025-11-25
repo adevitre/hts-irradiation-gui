@@ -1,6 +1,6 @@
 {
   "TcStabilizationMargin": 1,
-  "TemperatureSensorConfiguration": "Target holder 2 (Rod)",
+  "TemperatureSensorConfiguration": "Target holder 1 (Hat)",
   "datafileMaxSize": 50,
   "emails": [
     "dafisch@mit.edu",
@@ -8,7 +8,7 @@
   ],
   "iv_voltageThreshold": 20,
   "path_sequences": "/home/htsirradiation/Documents/sequences/",
-  "sampling_period_mc": 3,
+  "sampling_period_mc": 1,
   "sampling_period_nv": 0.4,
   "sampling_period_pm": 3,
   "sampling_period_tc": 1,

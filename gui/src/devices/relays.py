@@ -150,6 +150,7 @@ class Relays:
         '''
         if device == 'sample':
             self.setRelayState(RELAYBOARD_ADDR_100mA_SAMPLE, state='on')
+
         elif device == 'hallSensor':
             self.setRelayState(RELAYBOARD_ADDR_100mA_SAMPLE, state='off')
     
@@ -174,6 +175,7 @@ class Relays:
         '''
         if device == 'picoammeter':
             self.setRelayState(RELAYBOARD_ADDR_NVM_PICO, state='on')
+            
         elif device == 'nanovoltmeter':
             self.setRelayState(RELAYBOARD_ADDR_NVM_PICO, state='off')
 

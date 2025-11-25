@@ -107,7 +107,7 @@ class Sidebar(QWidget):
 
         # Set up the spinbox and button for manual magnetic field control
         self.QDoubleSpinBox_setField = QDoubleSpinBox(self)
-        self.QDoubleSpinBox_setField.setDecimals(1)
+        self.QDoubleSpinBox_setField.setDecimals(2)
         self.QDoubleSpinBox_setField.setRange(0, 14)
         self.QDoubleSpinBox_setField.setButtonSymbols(QDoubleSpinBox.NoButtons)
         self.QDoubleSpinBox_setField.setAlignment(Qt.AlignCenter)
@@ -217,7 +217,7 @@ class Sidebar(QWidget):
                 self.settemp_signal.emit(self.QDoubleSpinBox_setTemperature.value())
                 self.QDoubleSpinBox_setTemperature.clearFocus()
             elif self.QDoubleSpinBox_setField.hasFocus():
-                self.settemp_signal.emit(self.QDoubleSpinBox_setField.value())
+                self.set_field_signal.emit(self.QDoubleSpinBox_setField.value())
                 self.QDoubleSpinBox_setField.clearFocus()
 
     def updateSetpointDisplay(self, value):
@@ -348,6 +348,7 @@ class Sidebar(QWidget):
         self.label_magnetic_field.setText('{: <30}\t{: >20.2f}{: >10}'.format('Magnetic Field:', values[8], 'T'))
         if not self.QDoubleSpinBox_setField.hasFocus():
             self.QDoubleSpinBox_setField.setValue(values[7])
+            print('The field values that will be written to the spinbox is: ', values[7])
         QApplication.processEvents()
         
     def enable(self, enabled=True):

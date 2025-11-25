@@ -1,11 +1,8 @@
 import os, time, datetime, numpy
-
-
+from playsound import playsound
 from configure import load_json
 from scipy import integrate, constants
-
 from PyQt5.QtCore import pyqtSignal, QObject, QThreadPool, QTimer, QMutex
-
 from task import Task
 
 HARDWARE_PARAMETERS = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
@@ -90,7 +87,7 @@ class TaskManager(QObject):
         self.dm.updatePmReadings(pressure)
     
     def updateMcReadings(self):
-        setpoint_field = self.hm.getMagneticFieldReading()
+        setpoint_field = self.hm.get_setpoint_magnetic_field_reading()
         field = self.hm.getMagneticFieldReading()
         self.dm.updateMcReadings(setpoint_field, field)
 
@@ -350,6 +347,11 @@ class TaskManager(QObject):
         self.hm.setTemperature(self.warmupTemperature)
         self.log_signal.emit('Warming up to {:4.1f}'.format(self.warmupTemperature), 'Started!')
     
+    def stabilize_magnetic_field(self, setpoint):
+        self.hm.set_magnetic_field(setpoint)
+        while not self.hm.field_stable():
+            time.sleep(3)
+
     def stabilizeTemperature(self, setTemperature, rampRate=9., stabilizationTime=60, stabilizationMargin=.1, vb=False):
         if rampRate > 0:
             self.hm.rampTemperature(setTemperature, rampRate, ramping=True)
@@ -407,7 +409,12 @@ class TaskManager(QObject):
                         self.log_signal.emit('SequenceUpdate', 'Tc measurement complete! /{}/{}'.format(100, 100))
                     else:
                         self.log_signal.emit('SequenceUpdate', 'Tc measurement stopped by user! /{}/{}'.format(100, 100))
-                    
+
+                elif action == 'setField':
+                    self.log_signal.emit('SequenceUpdate', 'Set Field /{}/{}'.format(0, 100))
+                    if self.sequenceRunning:
+                        self.stabilize_magnetic_field(setpoint=float(params[1]))
+
                 elif action == 'SetTemperature':
                     self.log_signal.emit('SequenceUpdate', 'Set Temperature /{}/{}'.format(0, 100))
                     self.stabilizeTemperature(setTemperature=float(params[4]), rampRate=float(params[16]), stabilizationTime=int(params[12]), stabilizationMargin=float(params[8]), vb=False)
@@ -479,6 +486,15 @@ class TaskManager(QObject):
                     else:
                         move_step_index_highlight = True
 
+                elif action == 'Play':
+                    if params[-1] == 'Whoop!':
+                        playsound('sounds/proud-fart-288263.mp3')
+                    elif params[-1] == 'Everybody remain calm! The reactor is melting!':
+                        playsound('sounds/proud-fart-288263.mp3')
+                    elif params[-1] == 'What about the neutrons?':
+                        playsound('sounds/proud-fart-288263.mp3')
+                    elif params[-1] == 'It s a trap!': 
+                        playsound('sounds/proud-fart-288263.mp3')
                 else:
                     self.log_signal.emit('InvalidStep', 'Step {} in Sequence {} is not a valid action.'.format(i, 'SequenceName'))
                 

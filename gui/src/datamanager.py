@@ -99,6 +99,7 @@ class DataManager(QObject):
                 'field_T': field,
                 'backedup': False
             }
+            print('The last read setpoint for the magnet is: ', setpoint_field)
             self.mutexMc.lock()
             if self.mcData is not None:
                 self.mcData.loc[dt] = data

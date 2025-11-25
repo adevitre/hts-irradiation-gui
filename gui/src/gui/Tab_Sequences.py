@@ -8,6 +8,7 @@ from addTcStepWindow import AddTcStepWindow
 from addTemperatureStepWindow import AddTemperatureStepWindow
 from addWaitStepWindow import AddWaitStepWindow
 from addRelayStepWindow import AddRelayStepWindow
+
 from PyQt5.QtWidgets import QWidget, QLineEdit, QListWidgetItem, QProgressBar, QGridLayout, QHBoxLayout, QHeaderView, QAbstractItemView, QPushButton, QSpinBox, QDoubleSpinBox, QLabel, QInputDialog, QFileDialog, QMessageBox
 
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
@@ -37,87 +38,94 @@ class Tab_Sequences(QWidget):
         self.listWidget = ListWidget()
         self.listWidget.itemDoubleClicked.connect(self.editDoubleClickedItem)
         self.listWidget.setStyleSheet("background-color: #f0f0f0; border: 1px solid #f0f0f0;  outline: none;")
-
-        self.pushButtonMoveUp = QPushButton()
-        self.pushButtonMoveUp.clicked.connect(lambda: self.moveStep('up'))
-        self.pushButtonMoveUp.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/up.png'))
-        self.pushButtonMoveUp.setIconSize(QSize(100,100))
-
-        self.pushButtonMoveDown = QPushButton()
-        self.pushButtonMoveDown.clicked.connect(lambda: self.moveStep('down'))
-        self.pushButtonMoveDown.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/down.png'))
-        self.pushButtonMoveDown.setIconSize(QSize(100,100))
-
-        self.pushButtonCopyStep = QPushButton()
-        self.pushButtonCopyStep.clicked.connect(lambda: self.copyStep())
-        self.pushButtonCopyStep.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/copy.png'))
-        self.pushButtonCopyStep.setIconSize(QSize(100,100))
-
-        self.pushButtonRemoveStep = QPushButton()
-        self.pushButtonRemoveStep.clicked.connect(lambda: self.removeStep())
-        self.pushButtonRemoveStep.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/delete.png'))
-        self.pushButtonRemoveStep.setIconSize(QSize(100,100))
         
         self.labelStepStatus = QLabel('')
         self.progressStatus = QProgressBar()
         self.progressStatus.setMinimum(0)
 
-        button_size = 120
+        button_size_x = 210
+        button_size_y = 120
 
-        self.pushButtonIc = QPushButton()
-        self.pushButtonIc.setFixedSize(button_size, button_size)
+        self.pushButtonMoveUp = QPushButton('Reorder (up)')
+        self.pushButtonMoveUp.setFixedSize(button_size_x, button_size_y)
+        self.pushButtonMoveUp.clicked.connect(lambda: self.moveStep('up'))
+        self.pushButtonMoveUp.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/up.png'))
+        self.pushButtonMoveUp.setIconSize(QSize(100,100))
+
+        self.pushButtonMoveDown = QPushButton('Reorder (down)')
+        self.pushButtonMoveDown.setFixedSize(button_size_x, button_size_y)
+        self.pushButtonMoveDown.clicked.connect(lambda: self.moveStep('down'))
+        self.pushButtonMoveDown.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/down.png'))
+        self.pushButtonMoveDown.setIconSize(QSize(100,100))
+
+        self.pushButtonCopyStep = QPushButton('Copy step')
+        self.pushButtonCopyStep.setFixedSize(button_size_x, button_size_y)
+        self.pushButtonCopyStep.clicked.connect(lambda: self.copyStep())
+        self.pushButtonCopyStep.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/copy.png'))
+        self.pushButtonCopyStep.setIconSize(QSize(100,100))
+
+        self.pushButtonRemoveStep = QPushButton('Remove step')
+        self.pushButtonRemoveStep.setFixedSize(button_size_x, button_size_y)
+        self.pushButtonRemoveStep.clicked.connect(lambda: self.removeStep())
+        self.pushButtonRemoveStep.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/delete.png'))
+        self.pushButtonRemoveStep.setIconSize(QSize(100,100))
+
+        self.pushButtonIc = QPushButton('Measure Ic')
+        self.pushButtonIc.setFixedSize(button_size_x, button_size_y)
         self.pushButtonIc.clicked.connect(lambda: self.pushButtonIcPressed())
         self.pushButtonIc.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/ic.png'))
         self.pushButtonIc.setIconSize(QSize(100,100))
 
-        self.pushButtonTc = QPushButton()
-        self.pushButtonTc.setFixedSize(button_size, button_size)
+        self.pushButtonTc = QPushButton('Measure Tc')
+        self.pushButtonTc.setFixedSize(button_size_x, button_size_y)
         self.pushButtonTc.clicked.connect(lambda: self.pushButtonTcPressed())
         self.pushButtonTc.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/tc.png'))
         self.pushButtonTc.setIconSize(QSize(100,100))
 
-        self.pushButtonWait = QPushButton()
-        self.pushButtonWait.setFixedSize(button_size, button_size)
+        self.pushButtonWait = QPushButton('Add delay')
+        self.pushButtonWait.setFixedSize(button_size_x, button_size_y)
         self.pushButtonWait.clicked.connect(lambda: self.pushButtonWaitPressed())
         self.pushButtonWait.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/wait.png'))
         self.pushButtonWait.setIconSize(QSize(100,100))
 
-        self.pushButtonSound = QPushButton()
-        self.pushButtonSound.setFixedSize(button_size, button_size)
+        self.pushButtonSound = QPushButton('Mystery\nbutton')
+        self.pushButtonSound.setFixedSize(button_size_x, button_size_y)
         self.pushButtonSound.clicked.connect(lambda: self.push_button_sound_pressed())
         self.pushButtonSound.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/sound.png'))
         self.pushButtonSound.setIconSize(QSize(100,100))
 
-        self.pushButtonMagneticField = QPushButton()
-        self.pushButtonMagneticField.setFixedSize(button_size, button_size)
+        self.pushButtonMagneticField = QPushButton('Set Magnetic\nField')
+        self.pushButtonMagneticField.setFixedSize(button_size_x, button_size_y)
         self.pushButtonMagneticField.clicked.connect(lambda: self.push_button_magnetic_field_pressed())
         self.pushButtonMagneticField.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/field.png'))
         self.pushButtonMagneticField.setIconSize(QSize(100,100))
 
-        self.pushButtonLabel = QPushButton()
-        self.pushButtonLabel.setFixedSize(button_size, button_size)
+        self.pushButtonLabel = QPushButton('Append label\nto file name')
+        self.pushButtonLabel.setFixedSize(button_size_x, button_size_y)
         self.pushButtonLabel.clicked.connect(lambda: self.pushButtonLabelPressed())
         self.pushButtonLabel.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/label.png'))
         self.pushButtonLabel.setIconSize(QSize(100,100))
         
-        self.pushButtonRelays = QPushButton()
-        self.pushButtonRelays.setFixedSize(button_size, button_size)
+        self.pushButtonRelays = QPushButton('Switch relays')
+        self.pushButtonRelays.setFixedSize(button_size_x, button_size_y)
         self.pushButtonRelays.clicked.connect(lambda: self.pushButtonRelaysPressed())
         self.pushButtonRelays.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/relay.png'))
         self.pushButtonRelays.setIconSize(QSize(100, 100))
 
-        self.pushButtonTemperature = QPushButton()
-        self.pushButtonTemperature.setFixedSize(button_size, button_size)
+        self.pushButtonTemperature = QPushButton('Set target\ntemperature')
+        self.pushButtonTemperature.setFixedSize(button_size_x, button_size_y)
         self.pushButtonTemperature.clicked.connect(lambda: self.pushButtonTemperaturePressed())
         self.pushButtonTemperature.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/temperature.png'))
         self.pushButtonTemperature.setIconSize(QSize(100, 100))
 
         self.pushButtonSave = QPushButton('Save Sequence...')
+        self.pushButtonSave.setFixedSize(button_size_x, button_size_y)
         self.pushButtonSave.clicked.connect(lambda: self.saveSequence())
         self.pushButtonSave.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/save.png'))
         self.pushButtonSave.setIconSize(QSize(100, 100))
 
         self.pushButtonLoad = QPushButton('Load sequence...')
+        self.pushButtonLoad.setFixedSize(button_size_x, button_size_y)
         self.pushButtonLoad.clicked.connect(lambda: self.loadSequence())
         self.pushButtonLoad.setIcon(QIcon(os.getcwd()+'/images/sequence-icons/load.png'))
         self.pushButtonLoad.setIconSize(QSize(100, 100))
@@ -127,46 +135,47 @@ class Tab_Sequences(QWidget):
         self.pushButtonExecute.clicked.connect(lambda: self.runSequence())
         self.pushButtonExecute.setEnabled(False)
         
-        gridLayout.addWidget(self.listWidget, 0, 2, 9, 9)
+        gridLayout.addWidget(self.listWidget, 0, 4, 9, 7)
+
         gridLayout.addWidget(self.pushButtonLoad, 0, 0, 1, 2)
         gridLayout.setAlignment(self.pushButtonLoad, Qt.AlignCenter)
-        gridLayout.addWidget(self.pushButtonSave, 1, 0, 1, 2)
+        gridLayout.addWidget(self.pushButtonSave, 0, 2, 1, 2)
         gridLayout.setAlignment(self.pushButtonSave, Qt.AlignCenter)
 
-        gridLayout.addWidget(self.pushButtonTemperature, 2, 0, 1, 1)
+        gridLayout.addWidget(self.pushButtonTemperature, 1, 0, 1, 2)
         gridLayout.setAlignment(self.pushButtonTemperature, Qt.AlignCenter)
-        gridLayout.addWidget(self.pushButtonMagneticField, 2, 1, 1, 1)
+        gridLayout.addWidget(self.pushButtonMagneticField, 1, 2, 1, 2)
         gridLayout.setAlignment(self.pushButtonMagneticField, Qt.AlignCenter)
 
-        gridLayout.addWidget(self.pushButtonRelays, 3, 0, 1, 1)
+        gridLayout.addWidget(self.pushButtonRelays, 2, 0, 1, 2)
         gridLayout.setAlignment(self.pushButtonRelays, Qt.AlignCenter)
-        gridLayout.addWidget(self.pushButtonWait, 3, 1, 1, 1)
+        gridLayout.addWidget(self.pushButtonWait, 2, 2, 1, 2)
         gridLayout.setAlignment(self.pushButtonWait, Qt.AlignCenter)
 
-        gridLayout.addWidget(self.pushButtonIc, 4, 0, 1, 1)
+        gridLayout.addWidget(self.pushButtonIc, 3, 0, 1, 2)
         gridLayout.setAlignment(self.pushButtonIc, Qt.AlignCenter)
-        gridLayout.addWidget(self.pushButtonTc, 4, 1, 1, 1)
+        gridLayout.addWidget(self.pushButtonTc, 3, 2, 1, 2)
         gridLayout.setAlignment(self.pushButtonTc, Qt.AlignCenter)
 
-        gridLayout.addWidget(self.pushButtonLabel, 5, 0, 1, 1)
+        gridLayout.addWidget(self.pushButtonLabel, 4, 0, 1, 2)
         gridLayout.setAlignment(self.pushButtonLabel, Qt.AlignCenter)
-        gridLayout.addWidget(self.pushButtonSound, 5, 1, 1, 1)
+        gridLayout.addWidget(self.pushButtonSound, 4, 2, 1, 2)
         gridLayout.setAlignment(self.pushButtonSound, Qt.AlignCenter)
 
-        gridLayout.addWidget(self.pushButtonMoveUp, 6, 0, 1, 1)
+        gridLayout.addWidget(self.pushButtonMoveUp, 5, 2, 1, 2)
         gridLayout.setAlignment(self.pushButtonMoveUp, Qt.AlignCenter)
-        gridLayout.addWidget(self.pushButtonCopyStep, 6, 1, 1, 1)
+        gridLayout.addWidget(self.pushButtonCopyStep, 5, 0, 1, 2)
         gridLayout.setAlignment(self.pushButtonCopyStep, Qt.AlignCenter)
 
-        gridLayout.addWidget(self.pushButtonMoveDown, 7, 0, 1, 1)
+        gridLayout.addWidget(self.pushButtonMoveDown, 6, 2, 1, 2)
         gridLayout.setAlignment(self.pushButtonMoveDown, Qt.AlignCenter)
-        gridLayout.addWidget(self.pushButtonRemoveStep, 7, 1, 1, 1)
+        gridLayout.addWidget(self.pushButtonRemoveStep, 6, 0, 1, 2)
         gridLayout.setAlignment(self.pushButtonRemoveStep, Qt.AlignCenter)
 
         gridLayout.addWidget(self.pushButtonExecute, 9, 0, 1, 2)
         gridLayout.setAlignment(self.pushButtonExecute, Qt.AlignCenter)
-        gridLayout.addWidget(self.labelStepStatus, 9, 1, 1, 4)
-        gridLayout.addWidget(self.progressStatus, 9, 5, 1, 6)
+        gridLayout.addWidget(self.labelStepStatus, 9, 2, 1, 2)
+        gridLayout.addWidget(self.progressStatus, 9, 4, 1, 7)
 
     def editDoubleClickedItem(self):
         item = self.listWidget.currentItem()
@@ -179,13 +188,6 @@ class Tab_Sequences(QWidget):
     def finishEditing(self, line_edit, row):
         self.listWidget.takeItem(row)
         self.listWidget.insertItem(row, QListWidgetItem(line_edit.text()))
-
-    def addStep(self, step):
-        if self.listWidget.count() > 0:
-            self.listWidget.insertItem(self.listWidget.currentRow()+1, step)
-        else:
-            self.listWidget.addItem(step)
-        self.listWidget.setCurrentRow(self.listWidget.currentRow()+1)
 
     def pushButtonIcPressed(self):
         self.prompt = AddIcStepWindow()
@@ -213,14 +215,24 @@ class Tab_Sequences(QWidget):
         self.prompt.show()
     
     def push_button_magnetic_field_pressed(self):
-        print('pressed field button')
+        setpoint, ok = QInputDialog.getDouble(None, "Set central magnetic field", "Central magnetic Field:", value=0.0, min=0.00, max=14.00, decimals=2)
+        if ok: self.addStep('setField {} T'.format(setpoint))
         
     def push_button_sound_pressed(self):
-        print('pressed sound button')
+        items = ["Whoop!", "Everybody remain calm! The reactor is melting!", "What about the neutrons?", "It s a trap!"]
+        soundtrack, ok = QInputDialog.getItem(None, "Select a surprise", "Choose one:", items, 0, False)
+        if ok: self.addStep('Play ' + soundtrack)
         
     def pushButtonLabelPressed(self):
         value, ok = QInputDialog.getText(self, 'Label', 'Specify common label to all subsequent measurements:')
         if ok: self.addStep('Label {}'.format(value))
+
+    def addStep(self, step):
+        if self.listWidget.count() > 0:
+            self.listWidget.insertItem(self.listWidget.currentRow()+1, step)
+        else:
+            self.listWidget.addItem(step)
+        self.listWidget.setCurrentRow(self.listWidget.currentRow()+1)
 
     def removeStep(self):
         self.listWidget.takeItem(self.listWidget.currentRow())

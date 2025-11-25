@@ -78,10 +78,13 @@ class HardwareManager(QObject):
         return pressure
     
     def getMagneticFieldReading(self):
-        return 0 #self.mc.get_magnetic_field()
+        return self.mc.get_magnetic_field()
     
     def get_setpoint_magnetic_field_reading(self):
         return self.mc.get_setpoint_magnetic_field()
+    
+    def field_stable(self):
+        return self.mc.field_stable()
     
     def getTemperatureReading(self):
         sampleT, targetT, holderT, spareT = self.tc.getTemperatureReadings()
