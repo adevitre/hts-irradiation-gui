@@ -39,16 +39,16 @@ class MagnetController(Device):
         except Exception as e:
             print('MagneticFieldController::set_magnetic_field raised: ', e)
 
-    def get_setpoint_magnetic_field(self):
+    def get_setpoint_magnetic_field(self, vb):
         setpoint = numpy.nan
         try:
             r = self.read("FIELD:TARGet?")
-            print('The read setpoint command read: ', r)
+            if vb: print('DEBUG: The read setpoint command read: ', r)
             if re.fullmatch(self.settings["setp_pattern"], r) is not None:
                 setpoint = float(r)
-            print('The stripped value is: ', setpoint)
+            if vb: print('DEBUG: The stripped value is: ', setpoint)
         except Exception as e:
-            print('MagneticFieldController::read_setpoint_magnetic_field raised:', e)
+            print('EXCEPTION: MagneticFieldController::read_setpoint_magnetic_field raised:', e)
             print('Return value: ', r)
         return setpoint
 
