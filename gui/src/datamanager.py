@@ -16,14 +16,14 @@ from configure import update_json, load_json
 class DataManager(QObject):
     
     log_signal = pyqtSignal(str, str)
-    plot_signal = pyqtSignal(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+    plot_signal = pyqtSignal(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
     
-    def __init__(self, threadpool, parent=None):
+    def __init__(self, threadpool, parent=None, vb=False):
         super(DataManager, self).__init__(parent)
         
         self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')
         self.threadpool = threadpool
-        self.mutexTc, self.mutexPm, self.mutexPlots = QMutex(), QMutex(), QMutex()
+        self.mutexTc, self.mutexPm, self.mutexMc, self.mutexPlots = QMutex(), QMutex(), QMutex(), QMutex()
         self.initialize()
         
     def __del__(self):
@@ -36,7 +36,7 @@ class DataManager(QObject):
                                           # fit only takes values from the exponential voltage rise
         self.storingData = False
         self.backupFlags = [False, False] # Indicates whether temperature, pressure time series should be backed up to text files.
-        self.tcData, self.pmData, self.paData = None, None, None
+        self.tcData, self.pmData, self.paData, self.mcData = None, None, None, None
 
         # create the save directory and subdirectories
         self.save_directory = self.preferences["temporary_savefolder"]+str(datetime.datetime.now()).replace(' ', '_').replace(':', '-').replace('.', '')
@@ -88,8 +88,28 @@ class DataManager(QObject):
     
     def startTime(self):
         self.t0 = time.time()
-        self.tcData, self.pmData, self.paData = None, None, None
-        
+        self.tcData, self.pmData, self.paData, self.mcData = None, None, None, None
+
+    def updateMcReadings(self, setpoint_field, field):
+        try:
+            dt = datetime.datetime.now()
+            data = {
+                'time_s': time.time()-self.t0,
+                'setpoint_field': setpoint_field,
+                'field_T': field,
+                'backedup': False
+            }
+            print('The last read setpoint for the magnet is: ', setpoint_field)
+            self.mutexMc.lock()
+            if self.mcData is not None:
+                self.mcData.loc[dt] = data
+            else:
+                self.mcData = pd.DataFrame(data, index=[dt])
+        except Exception as e:
+            print('Exception while updating magnet controller readings: ', e)
+        finally:
+            self.mutexMc.unlock()
+
     def updatePmReadings(self, pressure):
         try:
             dt = datetime.datetime.now()
@@ -191,19 +211,24 @@ class DataManager(QObject):
     def updateEnvironmentPlots(self):
         self.mutexPlots.lock()
         self.mutexPm.lock()
+        self.mutexMc.lock()
         self.mutexTc.lock()
         try:
             cut = self.preferences['timeaxis_max']
             
             tcData = self.tcData.loc[self.tcData.index[-int(np.ceil(2*self.preferences['sampling_period_tc'])+cut):]].copy(deep=True)    
             pmData = self.pmData.loc[self.pmData.index[-int(np.ceil(2*self.preferences['sampling_period_pm'])+cut):]].copy(deep=True)    
-                    
-            self.plot_signal.emit(tcData.time_s.values, pmData.time_s.values, tcData.setpt_K.values, tcData.sampleT_K.values, tcData.targetT_K.values, tcData.holderT_K.values, tcData.spareT_K.values, pmData.pressure_torr.values, tcData.heaterPower_W.values)
+            mcData = self.mcData.loc[self.mcData.index[-int(np.ceil(2*self.preferences['sampling_period_pm'])+cut):]].copy(deep=True)
+
+            self.plot_signal.emit(tcData.time_s.values, pmData.time_s.values, mcData.time_s.values, tcData.setpt_K.values, tcData.sampleT_K.values, tcData.targetT_K.values, tcData.holderT_K.values, tcData.spareT_K.values, pmData.pressure_torr.values, tcData.heaterPower_W.values, mcData.setpoint_field.values, mcData.field_T.values)
         except AttributeError as e:
             print('DataManager:updateEnvironmentPlots returned: ', e)
-            print(tcData)
+            print(self.tcData)
+            print(self.pmData)
+            print(self.mcData)
         finally:
             self.mutexPm.unlock()
+            self.mutexMc.unlock()
             self.mutexTc.unlock()
             self.mutexPlots.unlock()
     
@@ -233,6 +258,8 @@ class DataManager(QObject):
             value = self.pmData.pressure_torr.iloc[-1]
         elif signal == 'Setpoint Temperature':
             value = self.tcData.setpt_K.iloc[-1]
+        elif signal == 'Magnetic Field':
+            value = self.mcData.field_T.iloc[-1]
         return value
     
     def getLatestTemperatureReading(self):

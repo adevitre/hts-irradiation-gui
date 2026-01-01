@@ -1,25 +1,25 @@
 import numpy, time, re
 from device import Device
-'''
-    A SerialDevice class for communications with a Lakeshore 336 temperature controller.
-    @author Alexis Devitre, David Fischer
-    @lastModified 21/08/2021
-'''
+
 class TemperatureController(Device):
-    
-    def __init__(self, waitLock=950, serialDevice=True):
-        super().__init__('temperature_controller', waitLock=waitLock, serialDevice=serialDevice)
+    '''
+        A SerialDevice class for communications with a Lakeshore 336 temperature controller.
+        @author Alexis Devitre, David Fischer
+        @lastModified November 2025
+    '''
+    def __init__(self, waitLock=950, serialDevice=True, vb=False):
+        super().__init__('temperature_controller', waitLock=waitLock, serialDevice=serialDevice, vb=vb)
         self.write('TLIMIT B,320')
         self.rampTemperature(rate=3, ramping=False)
         self.setHeaterOutput(on=True)
-        
-    '''
+    
+    def getTemperatureReadings(self):
+        '''
         Requests temperature readings (K) from channel a, b, c and d from the
         Lakeshore 336 Temperature Controller.
         @returns:
             temperatures (float, array) - temperature reading on each channel in kelvin
-    '''
-    def getTemperatureReadings(self):
+        '''
         d = [numpy.nan, numpy.nan, numpy.nan, numpy.nan]
         try:
             r = self.read("KRDG? 0") # 
@@ -28,6 +28,16 @@ class TemperatureController(Device):
         except Exception as e:
             print('TemperatureController::getTemperatureReadings raised:', e)
             print('Value returned by KRDG? 0 is ', r)
+        return tuple(d)
+    
+    def get_input_configuration(self):
+        d = [numpy.nan, numpy.nan, numpy.nan, numpy.nan]
+        try:
+            for i, sensor_id in enumerate(['A', 'B', 'C', 'D']):
+                d[i] = (self.read('INCRV?'+sensor_id))
+
+        except Exception as e:
+            print('TemperatureController::getInputConfiguration raised:', e)
         return tuple(d)
     
     '''
@@ -147,6 +157,16 @@ class TemperatureController(Device):
                 self.write('RANGE 3,{}'.format(0))
         except Exception as e:
             print('TemperatureController::setHeaterOutput raised: ', e)
+    
+    def set_input_configuration(self, sensor_configuration, vb=False):
+        try:
+            print(sensor_configuration)
+            for sensor_id, sensor_cal in zip(['A', 'B', 'C', 'D'], list(sensor_configuration.values())):
+                command = 'INCRV {},{}'.format(sensor_id, sensor_cal)
+                if vb: print(command)
+                self.write(command)
+        except Exception as e:
+            print('TemperatureController::getInputConfiguration raised:', e)
     
     def rampTemperature(self, rate, ramping=True):
         try:

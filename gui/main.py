@@ -23,9 +23,9 @@ from PyQt5 import QtGui, QtCore
 #configure_ports()
 
 ui = None
-app = QApplication(sys.argv)    # create the app (event loop)
-ui = GUIManager()                # create the GUI
-ui.show()                       # show the GUI
-app.exec_()			     		# start the event loop
-eliminateTempFiles(os.getcwd()) # Remove python cache files
-sys.exit()                      # End program
+app = QApplication(sys.argv)    	# create the app (event loop)
+ui = GUIManager(vb=False)              # create the GUI
+ui.show()                       	# show the GUI
+app.exec_()			     			# start the event loop
+eliminateTempFiles(os.getcwd()) 	# Remove python cache files
+sys.exit()                      	# End program

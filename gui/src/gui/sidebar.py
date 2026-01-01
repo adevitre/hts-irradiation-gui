@@ -107,7 +107,7 @@ class Sidebar(QWidget):
 
         # Set up the spinbox and button for manual magnetic field control
         self.QDoubleSpinBox_setField = QDoubleSpinBox(self)
-        self.QDoubleSpinBox_setField.setDecimals(1)
+        self.QDoubleSpinBox_setField.setDecimals(2)
         self.QDoubleSpinBox_setField.setRange(0, 14)
         self.QDoubleSpinBox_setField.setButtonSymbols(QDoubleSpinBox.NoButtons)
         self.QDoubleSpinBox_setField.setAlignment(Qt.AlignCenter)
@@ -115,36 +115,37 @@ class Sidebar(QWidget):
         self.QDoubleSpinBox_setField.setEnabled(False)
 
         self.pushButton_setField = QPushButton("Set magnetic field")
-        self.pushButton_setField.clicked.connect(lambda: self.set_field_signal.emit(self.QDoubleSpinBox_setTemperature.value()))
+        self.pushButton_setField.clicked.connect(lambda: self.set_field_signal.emit(self.QDoubleSpinBox_setField.value()))
         self.pushButton_setField.setStyleSheet(self.styles['QPushButton_simulation'])
         self.pushButton_setField.setShortcut('Ctrl+Shift+Return')
         self.pushButton_setField.setEnabled(False)
         self.pushButton_setField.setStyleSheet(self.styles['QPushButton_disable'])
         
+        icon_side_length = 90
         # Set up the controls for Farday cup actuation
         self.pushButtonFaradayCup = QPushButton()
         self.pushButtonFaradayCup.clicked.connect(self.pushButtonFaradayCup_clicked)
         self.pushButtonFaradayCup.setIcon(QIcon(os.getcwd()+'/images/BeamOff.png'))
         self.pushButtonFaradayCup.setStyleSheet(self.styles['QPushButton_icon'])
-        self.pushButtonFaradayCup.setIconSize(QSize(100, 100))
+        self.pushButtonFaradayCup.setIconSize(QSize(icon_side_length, icon_side_length))
 
         self.pushButtonCompressor = QPushButton()
         self.pushButtonCompressor.clicked.connect(self.pushButtonCompressor_clicked)
         self.pushButtonCompressor.setIcon(QIcon(os.getcwd()+'/images/notcooling.png'))
         self.pushButtonCompressor.setStyleSheet(self.styles['QPushButton_icon'])
-        self.pushButtonCompressor.setIconSize(QSize(100, 100))
+        self.pushButtonCompressor.setIconSize(QSize(icon_side_length, icon_side_length))
 
         self.pushButtonWarmup = HoverButton('', os.getcwd()+'/images/warmup-idle.png', os.getcwd()+'/images/warmup-hover.png')
         self.pushButtonWarmup.clicked.connect(self.warmup_signal.emit)
         self.pushButtonWarmup.setStyleSheet(self.styles['QPushButton_icon'])
-        self.pushButtonWarmup.setIconSize(QSize(100, 100))
+        self.pushButtonWarmup.setIconSize(QSize(icon_side_length, icon_side_length))
         self.pushButtonWarmup.setEnabled(False)
         
         self.pushButtonTargetLight = QPushButton()
         self.pushButtonTargetLight.clicked.connect(self.pushButtonTargetLight_clicked)
         self.pushButtonTargetLight.setIcon(QIcon(os.getcwd()+'/images/light-off.png'))
         self.pushButtonTargetLight.setStyleSheet(self.styles['QPushButton_icon'])
-        self.pushButtonTargetLight.setIconSize(QSize(100, 100))
+        self.pushButtonTargetLight.setIconSize(QSize(icon_side_length, icon_side_length))
         self.pushButtonTargetLight.setEnabled(False)
         self.pushButtonTargetLight.setToolTip('Toggle target light for sample alignment')
 
@@ -152,7 +153,7 @@ class Sidebar(QWidget):
         self.pushButtonChamberLight.clicked.connect(self.pushButtonChamberLight_clicked)
         self.pushButtonChamberLight.setIcon(QIcon(os.getcwd()+'/images/light-off.png'))
         self.pushButtonChamberLight.setStyleSheet(self.styles['QPushButton_icon'])
-        self.pushButtonChamberLight.setIconSize(QSize(100, 100))
+        self.pushButtonChamberLight.setIconSize(QSize(icon_side_length, icon_side_length))
         self.pushButtonChamberLight.setEnabled(False)
         self.pushButtonChamberLight.setToolTip('Toggle chamber light for sample mounting')
 
@@ -165,13 +166,11 @@ class Sidebar(QWidget):
         # Add controls to layouts for sidebar
         #
         # HBox layout for temperature control
-        verticalLayoutSideBar.addWidget(HorizontalLine())
         horizontalLayout = QHBoxLayout()
         horizontalLayout.addWidget(self.QDoubleSpinBox_setTemperature)
         horizontalLayout.addWidget(self.pushButtonSetTemperature)
         verticalLayoutSideBar.addLayout(horizontalLayout)
 
-        verticalLayoutSideBar.addWidget(HorizontalLine())
         verticalLayoutSideBar.addWidget(self.labelSampleTemperature)
         verticalLayoutSideBar.addWidget(self.labelHolderTemperature)
         verticalLayoutSideBar.addWidget(self.labelTargetTemperature)
@@ -186,31 +185,25 @@ class Sidebar(QWidget):
         verticalLayoutSideBar.addLayout(horizontalLayout)
         verticalLayoutSideBar.addWidget(self.label_magnetic_field)
 
+        # Set upthe turbo valve switch and pressure sensor controls
         verticalLayoutSideBar.addWidget(HorizontalLine())
+        verticalLayoutSideBar.addWidget(self.comboBoxSetTurboValve)
+        verticalLayoutSideBar.addWidget(self.labelPressure)
+        verticalLayoutSideBar.addWidget(HorizontalLine())
+
         horizontalLayout2 = QHBoxLayout()
         horizontalLayout2.addStretch()
         horizontalLayout2.addWidget(self.pushButtonFaradayCup)
         horizontalLayout2.addWidget(self.pushButtonCompressor)
         horizontalLayout2.addWidget(self.pushButtonWarmup)
         horizontalLayout2.addStretch()
+        
+        horizontalLayout2.addWidget(self.pushButtonTargetLight)
+        horizontalLayout2.addWidget(self.pushButtonChamberLight)
         verticalLayoutSideBar.addLayout(horizontalLayout2)
-        
-        horizontalLayout3 = QHBoxLayout()
-        horizontalLayout3.addStretch()
-        horizontalLayout3.addWidget(self.pushButtonTargetLight)
-        horizontalLayout3.addWidget(self.pushButtonChamberLight)
-        horizontalLayout3.addStretch()
-        verticalLayoutSideBar.addLayout(horizontalLayout3)
-        
-        # Set upthe turbo valve switch and pressure sensor controls
-        verticalLayoutSideBar.addWidget(HorizontalLine())
-        verticalLayoutSideBar.addWidget(self.comboBoxSetTurboValve)
-        verticalLayoutSideBar.addWidget(self.labelPressure)
-        verticalLayoutSideBar.addWidget(HorizontalLine())
         
         self.pushButtonResetQPS = QPushButton('Reset QPS')
         self.pushButtonResetQPS.clicked.connect(lambda: self.reset_signal.emit())
-        verticalLayoutSideBar.addStretch()
         verticalLayoutSideBar.addWidget(self.pushButtonResetQPS)
         
         self.setLayout(verticalLayoutSideBar)
@@ -223,11 +216,18 @@ class Sidebar(QWidget):
             if self.QDoubleSpinBox_setTemperature.hasFocus():
                 self.settemp_signal.emit(self.QDoubleSpinBox_setTemperature.value())
                 self.QDoubleSpinBox_setTemperature.clearFocus()
+            elif self.QDoubleSpinBox_setField.hasFocus():
+                self.set_field_signal.emit(self.QDoubleSpinBox_setField.value())
+                self.QDoubleSpinBox_setField.clearFocus()
 
     def updateSetpointDisplay(self, value):
         if not self.QDoubleSpinBox_setTemperature.hasFocus():
             self.QDoubleSpinBox_setTemperature.setValue(value)       
     
+    def updateSetpointDisplay(self, value):
+        if not self.QDoubleSpinBox_setField.hasFocus():
+            self.QDoubleSpinBox_setField.setValue(value) 
+
     def qShortcut_setTemperature_triggered(self):
         self.QDoubleSpinBox_setTemperature.setFocus()
             
@@ -343,14 +343,23 @@ class Sidebar(QWidget):
         self.labelTargetTemperature.setText('{: <30}\t{: >20.2f}{: >5}'.format('Target temperature:', values[2], 'K'))
         self.labelHolderTemperature.setText('{: <30}\t{: >20.2f}{: >5}'.format('Holder temperature:', values[3], 'K'))
         self.labelSpareTemperature.setText('{: <30}\t{: >20.2f}{: >5}'.format('Spare temperature:', values[4], 'K'))
-        self.labelHeaterPower.setText('{: <30}\t{: >20.2f}{: >5}'.format('   Heating power:', values[5], 'W')) # Leave three whitespaces to align with label rather than radio buttons
-        self.labelPressure.setText('{: <30}\t{: >20.2e}\t{: >10}'.format('Pressure:', values[6], 'torr'))
+        self.labelHeaterPower.setText('{: <33}\t{: >20.2f}{: >7}'.format('   Heating power:', values[5], 'W')) # Leave three whitespaces to align with label rather than radio buttons
+        self.labelPressure.setText('{: <30}\t{: >20.2e}\t{: >5}'.format('Pressure:', values[6], 'torr'))
+        self.label_magnetic_field.setText('{: <30}\t{: >20.2f}{: >10}'.format('Magnetic Field:', values[8], 'T'))
+        if not self.QDoubleSpinBox_setField.hasFocus():
+            self.QDoubleSpinBox_setField.setValue(values[7])
+            print('The field values that will be written to the spinbox is: ', values[7])
         QApplication.processEvents()
         
     def enable(self, enabled=True):
         self.pushButtonSetTemperature.setStyleSheet(self.styles['QPushButton_simulation'])
+        self.pushButton_setField.setStyleSheet(self.styles['QPushButton_simulation'])
         self.pushButtonSetTemperature.setEnabled(enabled)
+        self.pushButton_setField.setEnabled(enabled)
+        self.QDoubleSpinBox_setTemperature.setEnabled(enabled)
+        self.QDoubleSpinBox_setField.setEnabled(enabled)
         self.pushButtonChamberLight.setEnabled(enabled)
         self.pushButtonTargetLight.setEnabled(enabled)
-        self.QDoubleSpinBox_setTemperature.setEnabled(enabled)
         self.pushButtonWarmup.setEnabled(True)
+
+        

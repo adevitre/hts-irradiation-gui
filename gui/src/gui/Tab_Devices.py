@@ -7,30 +7,30 @@ from PyQt5.QtCore import pyqtSignal, Qt
 from horizontalline import HorizontalLine
 from configure import load_json, update_json
 
-"""
+class Tab_Devices(QWidget):
+    """
     Tab_Devices is a submodule of the GUI containing GUI objects and functions
     needed to monitor serial communication with the devices.
 
     @author Alexis Devitre (devitre@mit.edu)
-    @last-modified January 2025
-""" 
-
-     
-class Tab_Devices(QWidget):
-
+    @last-modified November 2025
+    """ 
     log_signal = pyqtSignal(str, str)
     test_signal = pyqtSignal(str)
     reset_signal = pyqtSignal()
     reconnect_signal = pyqtSignal(str)
+    write_cal_signal = pyqtSignal(str)
 
     hardware_parameters = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
+    preferences = load_json()
 
     def __init__(self, parent=None):
         super(Tab_Devices, self).__init__(parent)
         self.parent = parent
         
         self.styles = load_json(fname='styles.json', location=os.getcwd()+'/config')  # stylesheets for QWidgets
-        
+        self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')
+
         self.vboxlayout_top = QVBoxLayout()
         self.vboxlayout_device_parameters = QVBoxLayout()
         hboxlayout_device_parameters = QHBoxLayout()
@@ -131,15 +131,38 @@ class Tab_Devices(QWidget):
 
         self.comboBoxName.setCurrentIndex(1) #Trigger this function once to set the device parameters according to the combobox
 
-        labelShortcutsTitle = QLabel('List of shortcuts')
-        labelShortcutsTitle.setStyleSheet(self.styles['QLabel_Subtitle'])
-        labelShortcuts = QLabel('{: <30}\t{: <30}\n{: <30}\t{: <30}\n{: <30}\t{: <30}'.format('Ctrl+L', 'Add a note to the log', 'Ctrl+C', 'Calibrate 100 A current source', 'Ctrl(+Shift)+Tab', 'Switch tabs'))
+        #
+        #   Add sensor calibration option
+        #
+        label_title_calibrations = QLabel('Sensor calibration files')
+        label_title_calibrations.setStyleSheet(self.styles['QLabel_Subtitle'])
         self.vboxlayout_top.addStretch()
-        self.vboxlayout_top.addWidget(labelShortcutsTitle)
+        self.vboxlayout_top.addWidget(label_title_calibrations)
         self.vboxlayout_top.addWidget(HorizontalLine())
-        self.vboxlayout_top.addWidget(labelShortcuts)
-        self.vboxlayout_top.addStretch()
 
+        selected_calibration = self.preferences['TemperatureSensorConfiguration']
+        input_calibrations = [self.hardware_parameters['calibrations'][selected_calibration][key] for key in self.hardware_parameters['calibrations'][selected_calibration].keys()]
+        self.label_sensor_calibration = QLabel('Input A: {: >10}; Input B: {: >10}; Input C: {: >10}; Input D: {: >10}'.format(*input_calibrations))
+        
+        self.combobox_sensor_configuration = QComboBox(self)
+        self.combobox_sensor_configuration.addItems(['Target holder 1 (Hat)', 'Target holder 2 (Rod)'])
+        self.combobox_sensor_configuration.currentTextChanged.connect(self.combobox_sensor_configuration_selection_changed)
+        index = self.combobox_sensor_configuration.findText(selected_calibration)
+        if index >= 0:
+            self.combobox_sensor_configuration.setCurrentIndex(index)
+
+        hboxlayout_calibrations = QHBoxLayout()
+        hboxlayout_calibrations.addWidget(self.combobox_sensor_configuration)
+        hboxlayout_calibrations.addStretch()
+        hboxlayout_calibrations.addWidget(self.label_sensor_calibration)
+        self.vboxlayout_top.addLayout(hboxlayout_calibrations)
+
+        # initializes the inputs with the last used calibration files
+        self.write_cal_signal.emit(self.preferences['TemperatureSensorConfiguration'])
+
+        #
+        # Add the irradiation calculator
+        #
         labelShortcutsTitle = QLabel('Irradiation calculator')
         labelShortcutsTitle.setStyleSheet(self.styles['QLabel_Subtitle'])
         self.vboxlayout_top.addStretch()
@@ -184,6 +207,18 @@ class Tab_Devices(QWidget):
         self.vboxlayout_top.addWidget(self.label_answer)
         self.vboxlayout_top.addStretch()
 
+        #
+        #   Add the shortcuts brief
+        #
+        labelShortcutsTitle = QLabel('List of shortcuts')
+        labelShortcutsTitle.setStyleSheet(self.styles['QLabel_Subtitle'])
+        labelShortcuts = QLabel('{: <30}\t{: <30}\n{: <30}\t{: <30}\n{: <30}\t{: <30}'.format('Ctrl+L', 'Add a note to the log', 'Ctrl+C', 'Calibrate 100 A current source', 'Ctrl(+Shift)+Tab', 'Switch tabs'))
+        self.vboxlayout_top.addStretch()
+        self.vboxlayout_top.addWidget(labelShortcutsTitle)
+        self.vboxlayout_top.addWidget(HorizontalLine())
+        self.vboxlayout_top.addWidget(labelShortcuts)
+        self.vboxlayout_top.addStretch()
+
         self.enableDeviceParameters(False)
 
     def openManual(self):
@@ -218,6 +253,19 @@ class Tab_Devices(QWidget):
             if self.hardware_parameters['devices'][key]['name'] == self.comboBoxName.currentText():
                 self.device_key = key
         self.displayDeviceParameters()
+
+    def combobox_sensor_configuration_selection_changed(self):
+        '''
+        combobox_sensor_configuration_selection_changed updates the temperature controller 
+        input calibrations to the preset configuration specified by the combobox selection.
+        '''
+        selected_calibration = self.combobox_sensor_configuration.currentText()
+        self.preferences['TemperatureSensorConfiguration'] = selected_calibration
+        update_json(self.preferences, fname='preferences.json', location='config')
+
+        input_calibrations = [self.hardware_parameters['calibrations'][selected_calibration][key] for key in self.hardware_parameters['calibrations'][selected_calibration].keys()]
+        self.label_sensor_calibration.setText('Input A: {: >10}; Input B: {: >10}; Input C: {: >10}; Input D: {: >10}'.format(*input_calibrations))
+        self.write_cal_signal.emit(selected_calibration)
 
     def displaySerialDeviceStatus(self, device, connected):
         if connected:

@@ -7,8 +7,8 @@ from device import Device
 '''
 class CurrentSourceCAEN(Device):
     
-    def __init__(self, waitLock=950, serialDevice=True):
-        super().__init__('current_source_caen', waitLock=waitLock, serialDevice=serialDevice)
+    def __init__(self, waitLock=950, serialDevice=True, vb=False):
+        super().__init__('current_source_caen', waitLock=waitLock, serialDevice=serialDevice, vb=vb)
         self.write("MRESET")
         self.write("MON")
         self.write("MWG:35:0")

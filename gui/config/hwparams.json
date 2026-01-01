@@ -7,12 +7,26 @@
   "a": 0.19821459431856062,
   "b": -0.015305039824043774,
   "bridgeLength": 2,
+  "calibrations":{
+    "Target holder 1 (Hat)":{
+      "Input A": "21",
+      "Input B": "33",
+      "Input C": "34",
+      "Input D": "40"
+    },
+    "Target holder 2 (Rod)":{
+      "Input A": "24",
+      "Input B": "33",
+      "Input C": "23",
+      "Input D": "22"
+    }
+  },
   "devices": {
     "current_source_caen": {
       "aout_pattern": "[-+]?[0-9]*\\.[0-9]",
       "baudrate": 57600,
       "bytesize": 7,
-      "description": "The ideal current source for our work! (a little overpriced)",
+      "description": "The ideal current source for our work!",
       "ending": "\r\n",
       "ethernet_port": 10001,
       "greeting": "VER",
@@ -38,7 +52,7 @@
       "manual": "../manuals/LS121.pdf",
       "name": "LakeShore 121 Current Source",
       "parity": "O",
-      "port": "/dev/ttyUSB2",
+      "port": "/dev/ttyUSB0",
       "response": "LSCI,MODEL121",
       "stopbits": 1,
       "timeout": 1,
@@ -60,6 +74,26 @@
       "stopbits": "1",
       "timeout": "1",
       "xonxoff": "False"
+    },
+    "magnet_controller": {
+      "baudrate": "n.a.",
+      "bytesize": "n.a.",
+      "description": "Controller for the 14 T AMI magnet.",
+      "ending": "\r\n",
+      "ethernet_port": 7185,
+      "greeting": "*IDN?",
+      "image": "/images/devices/ami430_controller.png",
+      "ip": "192.168.0.11",
+      "manual": "../manuals/mn-430-rev11.pdf",
+      "name": "American Magnetics Model 430",
+      "parity": "n.a.",
+      "port": "n.a.",
+      "response": "AMERICAN MAGNETICS INC.,MODEL 430",
+      "setp_pattern": "[0-9]*\\.[0-9]*",
+      "stopbits": "n.a.",
+      "timeout": "n.a.",
+      "trdg_pattern": "[0-9]*\\.[0-9]*",
+      "xonxoff": "n.a."
     },
     "multimeter": {
       "baudrate": 0,
@@ -130,7 +164,7 @@
       "manual": "../manuals/LS336.pdf",
       "name": "LakeShore 336 Temperature Controller",
       "parity": "O",
-      "port": "/dev/ttyUSB0",
+      "port": "/dev/ttyUSB1",
       "response": "LSCI,MODEL336",
       "setp_pattern": "[-+]?[0-9]*\\.[0-9]*",
       "stopbits": 1,
@@ -148,7 +182,7 @@
       "manual": "../manuals/CS2231A.pdf",
       "name": "Keithley 2231-A-30-3 Power Supply",
       "parity": "N",
-      "port": "/dev/ttyUSB1",
+      "port": "/dev/ttyUSB2",
       "response": "Keithley instruments, 2231A-30-3",
       "stopbits": 1,
       "timeout": 1,

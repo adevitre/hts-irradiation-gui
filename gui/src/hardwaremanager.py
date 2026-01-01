@@ -11,10 +11,12 @@ from cs_tdk import CurrentSourceTDK
 from currentsource100A import CurrentSource100A
 from currentsource100mA import CurrentSource100mA
 from temperaturecontroller import TemperatureController
+from magnetcontroller import MagnetController
 from pressuremonitor import PressureMonitor
 from voltagesource import VoltageSource
 
 TEMPERATURE_CONTROLLER = 'LakeShore 336 Temperature Controller'
+MAGNET_CONTROLLER = 'American Magnetics Model 430'
 CURRENT_SOURCE = 'LakeShore 121 Current Source'
 POWER_SUPPLY = 'Keithley 2231-A-30-3 Power Supply'
 NANOVOLTMETER = 'Keithley 2182A Nanovoltmeter'
@@ -28,22 +30,23 @@ class HardwareManager(QObject):
     
     hardware_parameters = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, vb=False):
         self.tc, self.pm, self.nvm, self.dmm = None, None, None, None
         super(HardwareManager, self).__init__(parent)
         self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')
         
-        self.vs = VoltageSource()
-        self.csCAEN = None #CurrentSourceCAEN(serialDevice=False)
-        self.csTDK = None #CurrentSourceTDK()
-        self.cs100A = CurrentSource100A(self.hardware_parameters["a"], self.hardware_parameters["b"], self.hardware_parameters["shuntR"], self.vs, self.csCAEN, self.csTDK)
-        self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50))
+        self.vs = VoltageSource(vb=vb)
+        self.csCAEN = CurrentSourceCAEN(serialDevice=False, vb=vb)
+        self.csTDK = None #CurrentSourceTDK(vb=vb)
+        self.cs100A = CurrentSource100A(self.hardware_parameters["a"], self.hardware_parameters["b"], self.hardware_parameters["shuntR"], self.vs, self.csCAEN, self.csTDK, vb=vb)
+        self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50), vb=vb)
         self.relays = Relays()
         
-        self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=True)
-        self.pm = PressureMonitor(int(self.preferences["sampling_period_pm"]*1000-50))
-        self.nvm = NanoVoltmeter(int(self.preferences["sampling_period_nv"]*1000-50))
-        self.dmm = DMM6500(self.hardware_parameters["shuntR"], int(self.preferences["sampling_period_nv"]*1000-50))
+        self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=True, vb=vb)
+        self.mc = MagnetController(serialDevice=False, vb=vb)
+        self.pm = PressureMonitor(int(self.preferences["sampling_period_pm"]*1000-50), vb=vb)
+        self.nvm = NanoVoltmeter(int(self.preferences["sampling_period_nv"]*1000-50), vb=vb)
+        self.dmm = DMM6500(self.hardware_parameters["shuntR"], int(self.preferences["sampling_period_nv"]*1000-50), vb=vb)
            
     def initializeHardware(self):
         self.relays.connectCurrentSource100mATo(device='hallSensor') # connect current source
@@ -73,6 +76,15 @@ class HardwareManager(QObject):
         if ((self.pm.igOn) & (pressure > 2.5e-3)) | ((not self.pm.igOn) & (pressure < 2.5e-3)):
             self.pm.testIgOn()                # adjust the flag if igOn and overpressure or igOff and low pressure
         return pressure
+    
+    def getMagneticFieldReading(self):
+        return self.mc.get_magnetic_field()
+    
+    def get_setpoint_magnetic_field_reading(self):
+        return self.mc.get_setpoint_magnetic_field()
+    
+    def field_stable(self):
+        return self.mc.field_stable()
     
     def getTemperatureReading(self):
         sampleT, targetT, holderT, spareT = self.tc.getTemperatureReadings()
@@ -124,19 +136,26 @@ class HardwareManager(QObject):
         if vb: self.log_signal.emit('CurrentSet', 'Power supply {} set by user to {:4.2f} A'.format(currentSource, current))
         return self.cs100A.setCurrent(current, currentSource, calib, vb=vb)
     
+    def update_temperature_input_configuration(self, configuration):
+        self.tc.set_input_configuration(self.hardware_parameters['calibrations'][configuration])
+
     def enableParallelMode(self, enabled=False):
         self.cs100A.enableParallelMode(enabled=enabled)
 
     def setLargeCurrentCalibration(self, a, b):
         self.cs100A.updateCalibration(a, b)
     
+    def set_magnetic_field(self, magnetic_field):
+        self.mc.set_magnetic_field(magnetic_field)
+        self.log_signal.emit('MagSet', 'AMI Magnet field set to {:4.2f} T'.format(magnetic_field))
+
     def setTemperature(self, temperature):
         self.setSetpointTemperature(temperature)
         time.sleep(0.1)
         self.setHeaterOutput(on=True)
         if temperature < self.tc.getTargetTemperature():
             self.setCooler(on=True)
-        self.log_signal.emit('TempSet', '{:4.2f} K'.format(temperature))
+        self.log_signal.emit('TempSet', 'Target temperature set to {:4.2f} K'.format(temperature))
         
     def setSetpointTemperature(self, temperature):
         self.tc.setSetpointTemperature(temperature)
@@ -213,6 +232,8 @@ class HardwareManager(QObject):
     def testSerialConnection(self, device):
         if device == self.hardware_parameters['devices']['temperature_controller']['name']:
             connected = self.tc.testConnection()
+        elif device == self.hardware_parameters['devices']['magnet_controller']['name']:
+            connected = self.mc.testConnection()
         elif device == self.hardware_parameters['devices']['current_source_tc']['name']:
             connected = self.cs100mA.testConnection()
         elif device == self.hardware_parameters['devices']['voltagesource']['name']:
@@ -253,6 +274,9 @@ class HardwareManager(QObject):
         if device_key == 'temperature_controller':
             if self.tc is not None: del self.tc
             self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=True)
+        elif device_key == 'magnet_controller':
+            if self.mc is not None: del self.mc
+            self.mc = MagnetController()
         elif device_key == 'current_source_tc':
             if self.cs100mA is not None: del self.cs100mA
             self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50))

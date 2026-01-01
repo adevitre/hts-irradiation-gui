@@ -8,8 +8,8 @@ from device import Device
 '''
 class NanoVoltmeter(Device):
     
-    def __init__(self, waitLock=350):
-        super().__init__('nanovoltmeter', waitLock=waitLock)
+    def __init__(self, waitLock=350, vb=False):
+        super().__init__('nanovoltmeter', waitLock=waitLock, vb=vb)
         self.display_text('Wazaaaaa! waaaaazaaaaaa... aaaah', delay=0.1)
         self.offset, self.polarity = 0., 1
         

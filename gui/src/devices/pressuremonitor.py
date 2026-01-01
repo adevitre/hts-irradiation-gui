@@ -9,8 +9,8 @@ from device import Device
 '''
 class PressureMonitor(Device):
     
-    def __init__(self, waitLock=2950):
-        super().__init__('pressure_monitor', waitLock=waitLock)
+    def __init__(self, waitLock=2950, vb=False):
+        super().__init__('pressure_monitor', waitLock=waitLock, vb=vb)
         self.igOn=False
         if self.ser is not None:
             self.testIgOn()
@@ -43,7 +43,7 @@ class PressureMonitor(Device):
         @returns:
             pressure (float) - from either the low or high pressure gauges
     '''
-    def getPressure(self):
+    def getPressure(self, vb=False):
         r, command, pressure = '', "#01RDCG1", numpy.nan
         try:
             if self.igOn:

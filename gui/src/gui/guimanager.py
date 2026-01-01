@@ -48,7 +48,7 @@ class GUIManager(QMainWindow):
         else:
             event.ignore()
     
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, vb=False):
         
         super(GUIManager, self).__init__(parent)
         
@@ -60,9 +60,9 @@ class GUIManager(QMainWindow):
         self.sessionStarted = False  # if False, the GUI is in DEMO mode and data has not been acquired yet
         self.updatingPlots = False
 
-        self.hm = HardwareManager()
-        self.dm = DataManager(self.threadpool)
-        self.tm = TaskManager(self.dm, self.hm, self.threadpool)
+        self.hm = HardwareManager(vb=vb)
+        self.dm = DataManager(self.threadpool, vb=vb)
+        self.tm = TaskManager(self.dm, self.hm, self.threadpool, vb=vb)
         
         self.qShortcut_calibrate100ACurrentSource = QShortcut(QKeySequence('Ctrl+C'), self)
         self.qShortcut_calibrate100ACurrentSource.activated.connect(lambda: self.calibrate100ACurrentSource())
@@ -164,8 +164,10 @@ class GUIManager(QMainWindow):
         
         self.deviceTools.test_signal.connect(self.testSerialConnection)
         self.deviceTools.reconnect_signal.connect(self.reconnect_device)
+        self.deviceTools.write_cal_signal.connect(self.update_temperature_input_configuration)
 
         self.sidebar.settemp_signal.connect(self.setTemperature)
+        self.sidebar.set_field_signal.connect(self.set_magnetic_field)
         self.sidebar.faradaycup_signal.connect(self.insertFaradayCup)
         
         self.tabSwitchAction = QAction()
@@ -221,6 +223,10 @@ class GUIManager(QMainWindow):
     def setTemperature(self, temperature):
         self.threadpool.start(Task(self.hm.setTemperature, temperature))
     
+    @pyqtSlot(float)
+    def set_magnetic_field(self, magnetic_field):
+        self.threadpool.start(Task(self.hm.set_magnetic_field, magnetic_field))
+        
     @pyqtSlot(float, str)
     def setCurrent(self, current, current_source):
         if current_source == self.hardware_parameters['LABEL_CS006A']:
@@ -247,10 +253,10 @@ class GUIManager(QMainWindow):
             self.hm.connectSampleTo100A(connected=True)
             self.threadpool.start(Task(self.hm.setLargeCurrent, current, self.hardware_parameters['LABEL_TDK'], vb=True))
         
-    @pyqtSlot(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
-    def updateSignalsPlots(self, time_tc, time_pm, setpointT, sampleT, targetT, holderT, spareT, pressure, power):
-        self.environmentTools.updatePlottingArea(time_tc, time_pm, sampleT, targetT, holderT, spareT, pressure, power)
-        self.sidebar.updateValues(values=[setpointT[-1], sampleT[-1], targetT[-1], holderT[-1], spareT[-1], power[-1], pressure[-1]])
+    @pyqtSlot(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+    def updateSignalsPlots(self, time_tc, time_pm, time_mc, setpoint_temperature, sampleT, targetT, holderT, spareT, pressure, power, setpoint_field, field):
+        self.environmentTools.updatePlottingArea(time_tc, time_pm, time_mc, sampleT, targetT, holderT, spareT, pressure, power, field)
+        self.sidebar.updateValues(values=[setpoint_temperature[-1], sampleT[-1], targetT[-1], holderT[-1], spareT[-1], power[-1], pressure[-1], setpoint_field[-1], field[-1]])
          
     def showHelp(self):
         with open('docs/README.txt') as f:
@@ -313,6 +319,11 @@ class GUIManager(QMainWindow):
     def setPIDSensor(self, sensor):
         self.hm.setPIDSensor(sensor=sensor)
         self.log_event('SensorSet', 'PID control is now referenced to sensor {}'.format(sensor))
+
+    @pyqtSlot(str)
+    def update_temperature_input_configuration(self, configuration):
+        self.hm.update_temperature_input_configuration(configuration)
+        self.log_event('TemperatureInputSet', 'Temperature Input Configuration Set to {}.'.format(configuration))
 
     @pyqtSlot(str, str)
     def log_event(self, what='', comment='', logEvent=True):

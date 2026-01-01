@@ -7,8 +7,8 @@ from device import Device
 '''
 class CurrentSourceTDK(Device):
     
-    def __init__(self, waitLock=950, serialDevice=True):
-        super().__init__('current_source_tdk', waitLock=waitLock, serialDevice=serialDevice)
+    def __init__(self, waitLock=950, serialDevice=True, vb=False):
+        super().__init__('current_source_tdk', waitLock=waitLock, serialDevice=serialDevice, vb=vb)
         #self.write("RST")
         self.write('ADR 6') # wake up the power supply
         time.sleep(.05)

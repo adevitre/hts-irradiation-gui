@@ -8,8 +8,8 @@ class CurrentSource100mA(Device):
         @lastModified 2023/07/27
     '''
 
-    def __init__(self, waitLock=950):
-        super().__init__('current_source_tc', waitLock=waitLock)
+    def __init__(self, waitLock=950, vb=False):
+        super().__init__('current_source_tc', waitLock=waitLock, vb=vb)
 
         if self.ser is not None:
             self.initialize()

@@ -27,16 +27,26 @@ class Tab_Signals(QWidget):
         gridLayout = QGridLayout(self)
         
         self.plotref = None
-        self.plottingArea = SignalsPlot(nPlots=3, xlabel='Time [s]', ylabels=['Temperature [K]', 'Heating power [W]', 'Pressure [torr]'])
-        self.plottingArea.axes[2].set_yscale('log')
-        self.plottingArea.axes[2].set_yticks([1e-7, 1e-5, 1e-3, 1e-1, 1e1, 1e3, 1e5])
-        self.plottingArea.axes[2].set_ylim(1e-7, 1e3)
-        self.plottingArea.axes[1].set_yticks(numpy.arange(0, 600, 100))
-        self.plottingArea.axes[1].set_ylim(0, 500)
-        self.plottingArea.axes[0].set_yticks(numpy.arange(0, 400, 50))
-        self.plottingArea.axes[0].set_ylim(0, 350)
-        self.plottingArea.axes[0].set_xticks(numpy.arange(0, self.preferences['timeaxis_max']+self.preferences['timeaxis_step'], self.preferences['timeaxis_step']))
-        self.plottingArea.axes[0].set_xlim(0, self.preferences['timeaxis_max'])
+        self.plottingArea = SignalsPlot(parent=None, xlabel='Time [s]', ylabels=['Temperature [K]', 'Heating power [W]', 'Pressure [torr]', 'Magnetic Field [T]'])
+        
+        # Temperature axis
+        self.plottingArea.axes[0][0].set_yticks(numpy.arange(0, 400, 50))
+        self.plottingArea.axes[0][0].set_ylim(0, 350)
+        self.plottingArea.axes[0][0].set_xticks(numpy.arange(0, self.preferences['timeaxis_max']+self.preferences['timeaxis_step'], self.preferences['timeaxis_step']))
+        self.plottingArea.axes[0][0].set_xlim(0, self.preferences['timeaxis_max'])
+        
+        # Heating power axis
+        self.plottingArea.axes[0][1].set_yticks(numpy.arange(0, 600, 100))
+        self.plottingArea.axes[0][1].set_ylim(0, 500)
+        
+        # Pressure axis
+        self.plottingArea.axes[1][0].set_yscale('log')
+        self.plottingArea.axes[1][0].set_yticks([1e-7, 1e-5, 1e-3, 1e-1, 1e1, 1e3, 1e5])
+        self.plottingArea.axes[1][0].set_ylim(1e-7, 1e3)
+        
+        # Magnetic field axis
+        self.plottingArea.axes[1][1].set_yticks(numpy.arange(0, 15, 3))
+        self.plottingArea.axes[1][1].set_ylim(0, 16)
         
         plotWithToolbar = QWidget()
         plotLayout = QVBoxLayout()
@@ -46,7 +56,7 @@ class Tab_Signals(QWidget):
         
         gridLayout.addWidget(plotWithToolbar, 0, 0, 10, 10)
         
-    def updatePlottingArea(self, time_tc, time_pm, sampleT, targetT, holderT, spareT, pressure, power):
+    def updatePlottingArea(self, time_tc, time_pm, time_mc, sampleT, targetT, holderT, spareT, pressure, power, field):
         
         if time_tc[-1] > self.preferences['timeaxis_max']:
             time_tc += self.preferences['timeaxis_max'] - time_tc[-1]
@@ -67,17 +77,20 @@ class Tab_Signals(QWidget):
             self.plotref['Power'].set_xdata(time_tc)
             self.plotref['Pressure'].set_ydata(pressure)
             self.plotref['Pressure'].set_xdata(time_pm)
+            self.plotref['Magnetic Field'].set_ydata(field)
+            self.plotref['Magnetic Field'].set_xdata(time_mc)
             
         else:
             self.plotref = {
-                'Sample Temperature': self.plottingArea.axes[0].plot(time_tc, sampleT, color='b')[0],
-                'Target Temperature': self.plottingArea.axes[0].plot(time_tc, targetT, color='r')[0],
-                'Holder Temperature': self.plottingArea.axes[0].plot(time_tc, holderT, color='g')[0],
-                'Spare Temperature': self.plottingArea.axes[0].plot(time_tc, spareT, color='purple')[0],
-                'Power': self.plottingArea.axes[1].plot(time_tc, power, color='k')[0],
-                'Pressure': self.plottingArea.axes[2].plot(time_pm, pressure, color='forestgreen')[0]
+                'Sample Temperature': self.plottingArea.axes[0][0].plot(time_tc, sampleT, color='b')[0],
+                'Target Temperature': self.plottingArea.axes[0][0].plot(time_tc, targetT, color='r')[0],
+                'Holder Temperature': self.plottingArea.axes[0][0].plot(time_tc, holderT, color='g')[0],
+                'Spare Temperature': self.plottingArea.axes[0][0].plot(time_tc, spareT, color='purple')[0],
+                'Power': self.plottingArea.axes[0][1].plot(time_tc, power, color='k')[0],
+                'Pressure': self.plottingArea.axes[1][0].plot(time_pm, pressure, color='forestgreen')[0],
+                'Magnetic Field': self.plottingArea.axes[1][1].plot(time_mc, field, color='magenta')[0]
             }
-            
+        #print(self.plotref, type(self.plotref), self.plotref['Sample Temperature'])
         try:
             self.plottingArea.draw()
         except Exception as e:
