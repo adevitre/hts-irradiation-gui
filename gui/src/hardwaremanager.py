@@ -3,17 +3,23 @@ import os, time
 from PyQt5.QtCore import QObject, pyqtSignal
 from configure import load_json
 
-from relays import Relays
+# from relays import Relays
 from nanovoltmeter import NanoVoltmeter
-from dmm6500 import DMM6500
+
+# added, Ben Clark
+from temperature_monitor import TemperatureMonitor
+from heater_supply import HeaterSupply
 from currentsourceCAEN import CurrentSourceCAEN
-from cs_tdk import CurrentSourceTDK
 from currentsource100A import CurrentSource100A
-from currentsource100mA import CurrentSource100mA
-from temperaturecontroller import TemperatureController
-from magnetcontroller import MagnetController
-from pressuremonitor import PressureMonitor
-from voltagesource import VoltageSource
+
+# from dmm6500 import DMM6500
+# from cs_tdk import CurrentSourceTDK
+# from currentsource100mA import CurrentSource100mA
+# from temperaturecontroller import TemperatureController
+# from pressuremonitor import PressureMonitor
+# from voltagesource import VoltageSource
+
+# from magnetcontroller import MagnetController
 
 TEMPERATURE_CONTROLLER = 'LakeShore 336 Temperature Controller'
 MAGNET_CONTROLLER = 'American Magnetics Model 430'
@@ -22,8 +28,12 @@ POWER_SUPPLY = 'Keithley 2231-A-30-3 Power Supply'
 NANOVOLTMETER = 'Keithley 2182A Nanovoltmeter'
 MULTIMETER = 'Keithley DMM6500 Digital Multimeter'
 PRESSURE_CONTROLLER = 'Instrutech FlexRax 4000 Vacuum Gauge Controller'
-CURRENT_SOURCE_TDK = 'TDK Current Source GEN6-100'
 
+# added, Ben Clark
+TEMPERATURE_MONITOR = 'LakeShore 218 Temperature Monitor'
+HEATER_SUPPLY = 'Elektro-Automatik  EA-PS 9360-15 heater supply'
+
+        
 class HardwareManager(QObject):
     
     log_signal = pyqtSignal(str, str)
@@ -32,26 +42,35 @@ class HardwareManager(QObject):
     
     def __init__(self, parent=None, vb=False):
         self.tc, self.pm, self.nvm, self.dmm = None, None, None, None
+        # # added, Ben Clark, set these to None in order to test PID with separate script
+        # self.tm218 = None
+        # self.hs = None
+
         super(HardwareManager, self).__init__(parent)
         self.preferences = load_json(fname='preferences.json', location=os.getcwd()+'/config')
         
-        self.vs = VoltageSource(vb=vb)
+        # self.vs = VoltageSource(vb=vb)
+        self.vs = None
         self.csCAEN = CurrentSourceCAEN(serialDevice=False, vb=vb)
-        self.csTDK = None #CurrentSourceTDK(vb=vb)
+        self.csTDK = None
         self.cs100A = CurrentSource100A(self.hardware_parameters["a"], self.hardware_parameters["b"], self.hardware_parameters["shuntR"], self.vs, self.csCAEN, self.csTDK, vb=vb)
-        self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50), vb=vb)
-        self.relays = Relays()
+        # self.cs100mA = CurrentSource100mA(int(self.preferences["sampling_period_tc"]*1000-50), vb=vb)
+        # self.relays = Relays()
         
-        self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=True, vb=vb)
-        self.mc = MagnetController(serialDevice=False, vb=vb)
-        self.pm = PressureMonitor(int(self.preferences["sampling_period_pm"]*1000-50), vb=vb)
+        # self.tc = TemperatureController(int(self.preferences["sampling_period_tc"]*1000-50), serialDevice=True, vb=vb)
+        # self.mc = MagnetController(serialDevice=False, vb=vb)
+        # self.pm = PressureMonitor(int(self.preferences["sampling_period_pm"]*1000-50), vb=vb)
         self.nvm = NanoVoltmeter(int(self.preferences["sampling_period_nv"]*1000-50), vb=vb)
-        self.dmm = DMM6500(self.hardware_parameters["shuntR"], int(self.preferences["sampling_period_nv"]*1000-50), vb=vb)
-           
+        # self.dmm = DMM6500(self.hardware_parameters["shuntR"], int(self.preferences["sampling_period_nv"]*1000-50), vb=vb)
+        
+        # added, Ben Clark
+        self.tm218 = TemperatureMonitor()
+        self.hs = HeaterSupply()
+
     def initializeHardware(self):
-        self.relays.connectCurrentSource100mATo(device='hallSensor') # connect current source
-        self.relays.connectSampleTo100A(connected=False)
-        self.relays.measureSampleWith(device='nanovoltmeter')
+        # self.relays.connectCurrentSource100mATo(device='hallSensor') # connect current source
+        # self.relays.connectSampleTo100A(connected=False)
+        # self.relays.measureSampleWith(device='nanovoltmeter')
         self.setVoltageOffset()
     
     def __del__(self):
@@ -72,9 +91,14 @@ class HardwareManager(QObject):
         return self.relays.getFaradayCupState()
         
     def getPressureReading(self):
-        pressure = self.pm.getPressure()
-        if ((self.pm.igOn) & (pressure > 2.5e-3)) | ((not self.pm.igOn) & (pressure < 2.5e-3)):
-            self.pm.testIgOn()                # adjust the flag if igOn and overpressure or igOff and low pressure
+        # commented out, Ben Clark
+        # pressure = self.pm.getPressure()
+        # if ((self.pm.igOn) & (pressure > 2.5e-3)) | ((not self.pm.igOn) & (pressure < 2.5e-3)):
+        #     self.pm.testIgOn()                # adjust the flag if igOn and overpressure or igOff and low pressure
+        # return pressure
+
+        # modified version, Ben Clark
+        pressure = 0 # temporary
         return pressure
     
     def getMagneticFieldReading(self):
@@ -87,11 +111,16 @@ class HardwareManager(QObject):
         return self.mc.field_stable()
     
     def getTemperatureReading(self):
-        sampleT, targetT, holderT, spareT = self.tc.getTemperatureReadings()
-        heatingPower = self.tc.getHeatingPower()
-        setpointT = self.tc.getSetpointTemperature()
-        return setpointT, sampleT, targetT, holderT, spareT, heatingPower
-    
+        # comment out this function, added return statement -Ben Clark
+        # sampleT, targetT, holderT, spareT = self.tc.getTemperatureReadings()
+        # heatingPower = self.tc.getHeatingPower()
+        # setpointT = self.tc.getSetpointTemperature()
+        # return setpointT, sampleT, targetT, holderT, spareT, heatingPower
+
+        # modified version, Ben Clark
+        sampleT, holderT = self.tm218.get_temperature_readings()
+        return sampleT, holderT
+
     def getSampleTemperature(self):
         return self.tc.getSampleTemperature()
     
@@ -140,14 +169,19 @@ class HardwareManager(QObject):
         self.tc.set_input_configuration(self.hardware_parameters['calibrations'][configuration])
 
     def enableParallelMode(self, enabled=False):
-        self.cs100A.enableParallelMode(enabled=enabled)
-
-    def setLargeCurrentCalibration(self, a, b):
-        self.cs100A.updateCalibration(a, b)
+        # commented out, Ben Clark
+        # self.cs100A.enableParallelMode(enabled=enabled)
+        return
     
+    def setLargeCurrentCalibration(self, a, b):
+        # commented out, Ben Clark
+        # self.cs100A.updateCalibration(a, b)
+        return
+
     def set_magnetic_field(self, magnetic_field):
-        self.mc.set_magnetic_field(magnetic_field)
-        self.log_signal.emit('MagSet', 'AMI Magnet field set to {:4.2f} T'.format(magnetic_field))
+        # self.mc.set_magnetic_field(magnetic_field)
+        # self.log_signal.emit('MagSet', 'AMI Magnet field set to {:4.2f} T'.format(magnetic_field))
+        return
 
     def setTemperature(self, temperature):
         self.setSetpointTemperature(temperature)
@@ -162,43 +196,57 @@ class HardwareManager(QObject):
         time.sleep(.1)
     
     def setPIDSensor(self, sensor='B'):
-        self.tc.setPIDSensor(sensor=sensor)
+        # commented out, Ben Clark
+        # self.tc.setPIDSensor(sensor=sensor)
+        return
 
     def setHeaterOutput(self, on=True):
         self.tc.setHeaterOutput(on)
         time.sleep(.1)
     
     def setCooler(self, on=True):
-        self.relays.setCooler(on=on)
-        if on:
-            self.log_signal.emit('CoolingModeSet', '1')
-        else:
-            self.log_signal.emit('CoolingModeSet', '0')
+        #  commented  out, Ben Clark
+        # self.relays.setCooler(on=on)
+        # if on:
+        #     self.log_signal.emit('CoolingModeSet', '1')
+        # else:
+        #     self.log_signal.emit('CoolingModeSet', '0')
+        return
             
     def connectCurrentSource100mATo(self, device='sample'):
-        self.relays.connectCurrentSource100mATo(device) # connect current source
-        time.sleep(1)
-        self.cs100mA.enable(enabled=True)
-        time.sleep(1)
-        
+        # commented out, Ben Clark
+        # self.relays.connectCurrentSource100mATo(device) # connect current source
+        # time.sleep(1)
+        # self.cs100mA.enable(enabled=True)
+        # time.sleep(1)
+        return
+    
     def connectSampleTo6A(self, connected=True):
-        self.relays.connectSampleTo6A(connected)
+        # commented out, Ben Clark
+        # self.relays.connectSampleTo6A(connected)
+        return
     
     def connectSampleTo100A(self, connected=True):
-        self.relays.connectSampleTo100A(connected)
+        # commented out, Ben Clark
+        # self.relays.connectSampleTo100A(connected)
+        return
     
     def enableCurrentSource100mA(self, enabled=True):
-        self.cs100mA.enable(enabled)
-        time.sleep(.1)
+        # commented out, Ben Clark
+        # self.cs100mA.enable(enabled)
+        # time.sleep(.1)
+        return
     
     def measureSampleWith(self, device='picoammeter'):
-        '''
-            Calls function from relays, which connects the picoammeter (during irradiation) or the nanovoltmeter (during measurements) to the sample
+        # commented out, Ben Clark
+        # '''
+        #     Calls function from relays, which connects the picoammeter (during irradiation) or the nanovoltmeter (during measurements) to the sample
             
-            INPUTS:
-                device (str) 'picoammeter' or 'nanovoltmeter'
-        '''
-        self.relays.measureSampleWith(device)
+        #     INPUTS:
+        #         device (str) 'picoammeter' or 'nanovoltmeter'
+        # '''
+        # self.relays.measureSampleWith(device)
+        return
 
     def insertFaradayCup(self, inserted=True, logEvent=True):
         '''
@@ -250,17 +298,23 @@ class HardwareManager(QObject):
         self.log_signal.emit('SerialStatus', '{}~{}'.format(device, connected))
 
     def setTargetLight(self, on=False):
-        self.relays.setTargetLight(on=on)
+        # commented out, Ben Clark
+        # self.relays.setTargetLight(on=on)
+        return
 
     def setChamberLight(self, on=False):
-        self.relays.setChamberLight(on=on)
+        # commented out, Ben Clark
+        # self.relays.setChamberLight(on=on)
+        return
 
     def setVoltageSign(self, sign):
         self.nvm.setPolarity(sign)
         self.log_signal.emit('VoltageSign', 'Voltage sign switched to {} by user. Ic, Tc and Vt measurements will be affected.')
 
     def resetQPS(self):
-        self.relays.resetQPS()
+        # commented out, Ben Clark
+        # self.relays.resetQPS()
+        return
 
     def reconnect_device(self, device_key):
         '''

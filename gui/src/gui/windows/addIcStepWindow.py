@@ -24,7 +24,7 @@ class AddIcStepWindow(QWidget):
             elif self.QPushButtonCancel.hasFocus():
                 self.close()
 
-    def __init__(self, parent = None, default_directory='/home/htsirradiation/Documents/data/'):
+    def __init__(self, parent = None, default_directory='C:/Users/benclark/Documents/data'):
         super(AddIcStepWindow, self).__init__(parent)
         #styles = load_json(fname='styles.json') 
 
@@ -132,7 +132,7 @@ class AddIcStepWindow(QWidget):
             desc = self.QLineEdit_description.text()
         except Exception as e:
             print(e)
-        regex = re.compile('[@ !#$%^&*()<>?/\|}{~:]')
+        regex = re.compile(r'[@ !#$%^&*()<>?/\|}{~:]')
         if(regex.search(desc) == None and desc != ""):
             self.ok_signal.emit('MeasureIc : Label = {} ; Repeats = {} ; Wait between IVs = {} s; Start-Current = {} A; Step-size {} A; Voltage-limit = {} uV; Current-Source = {}'.format(desc, self.QSpinBox_measurements.value(), self.QDoubleSpinBox_wait.value(), self.QDoubleSpinBox_ramp.value(), self.QDoubleSpinBox_stepSize.value(), self.QDoubleSpinBox_vlimit.value(), self.comboBoxSelectCurrentSource.currentText()))
             self.close()

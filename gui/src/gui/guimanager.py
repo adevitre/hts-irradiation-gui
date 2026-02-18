@@ -167,7 +167,7 @@ class GUIManager(QMainWindow):
         self.deviceTools.write_cal_signal.connect(self.update_temperature_input_configuration)
 
         self.sidebar.settemp_signal.connect(self.setTemperature)
-        self.sidebar.set_field_signal.connect(self.set_magnetic_field)
+        # self.sidebar.set_field_signal.connect(self.set_magnetic_field)
         self.sidebar.faradaycup_signal.connect(self.insertFaradayCup)
         
         self.tabSwitchAction = QAction()
@@ -185,12 +185,19 @@ class GUIManager(QMainWindow):
         self.setWindowTitle(' ')
         
     def initializeControls(self):
-        self.sidebar.setControl(which='pidsensor', value=self.hm.getPIDSensor())
-        self.sidebar.setControl(which='cryocooler', value=self.hm.getCryocoolerState())
-        self.sidebar.setControl(which='turbovalve', value=self.hm.getGateValveState())
-        self.sidebar.setControl(which='faradaycup', value=self.hm.getFaradayCupState())
-        setpointT, sampleT, targetT, holderT, spareT, heatingPower = self.hm.getTemperatureReading()
+        # commented out by Ben Clark, added return statement
+        # self.sidebar.setControl(which='pidsensor', value=self.hm.getPIDSensor())
+        # self.sidebar.setControl(which='cryocooler', value=self.hm.getCryocoolerState())
+        # self.sidebar.setControl(which='turbovalve', value=self.hm.getGateValveState())
+        # self.sidebar.setControl(which='faradaycup', value=self.hm.getFaradayCupState())
+        # setpointT, sampleT, targetT, holderT, spareT, heatingPower = self.hm.getTemperatureReading()
+        
+        # modification and temporary values created, Ben Clark
+        sampleT, holderT = self.hm.getTemperatureReading()
+        setpointT, targetT, spareT, heatingPower = (0, 0, 0, 0)
+
         self.sidebar.updateValues(values=[setpointT, sampleT, targetT, holderT, spareT, heatingPower, 0, 0, 0])
+
         
     def switchTab(self):
         self.tabWidget.setCurrentIndex((self.tabWidget.currentIndex()+1)%self.tabWidget.count())
@@ -225,7 +232,8 @@ class GUIManager(QMainWindow):
     
     @pyqtSlot(float)
     def set_magnetic_field(self, magnetic_field):
-        self.threadpool.start(Task(self.hm.set_magnetic_field, magnetic_field))
+        # self.threadpool.start(Task(self.hm.set_magnetic_field, magnetic_field))
+        return
         
     @pyqtSlot(float, str)
     def setCurrent(self, current, current_source):

@@ -65,59 +65,63 @@ def fitIV(current, voltage, vc=.2e-6, fitType='logarithmic', vThreshold=1e-7, vb
         ic - Fitted value of the critical current
         n  - Fitted value of the exponent
     '''
-    try:
+    # try:
         #print('\n\nCurrent:\n\n')
         #print(current)
         #print('\n\nVoltage:\n\n')
         #print(voltage)
         # first remove the high-voltage points (>40uV, arbitrary) that can lead to an innacurate fit
-        current = current[voltage <= 4e-5]
-        voltage = voltage[voltage <= 4e-5]
+        # current = current[voltage <= 4e-5]
+        # voltage = voltage[voltage <= 4e-5]
         
-        valid = ~(np.isnan(current) | np.isnan(voltage))
-        popt, pcov = curve_fit(linear, np.log(np.abs(current[valid][-2:])), np.log(np.abs(voltage[valid][-2:])))
-        n, ic = popt[0], vc**(1./popt[0])/np.exp(popt[1]/popt[0])
+    #     valid = ~(np.isnan(current) | np.isnan(voltage))
+    #     popt, pcov = curve_fit(linear, np.log(np.abs(current[valid][-2:])), np.log(np.abs(voltage[valid][-2:])))
+    #     n, ic = popt[0], vc**(1./popt[0])/np.exp(popt[1]/popt[0])
 
-        if vb: print('First estimate of Ic is {:4.3e} A, n is {:4.3f}. The last two points are [{:4.3e}, {:4.3e}] and [{:4.3e}, {:4.3e}]'.format(ic, n, current[valid][-2], voltage[valid][-2], current[valid][-1], voltage[valid][-1]))
+    #     if vb: print('First estimate of Ic is {:4.3e} A, n is {:4.3f}. The last two points are [{:4.3e}, {:4.3e}] and [{:4.3e}, {:4.3e}]'.format(ic, n, current[valid][-2], voltage[valid][-2], current[valid][-1], voltage[valid][-1]))
         
-        popt, pcov = curve_fit(powerLaw, current[valid], voltage[valid])
+    #     popt, pcov = curve_fit(powerLaw, current[valid], voltage[valid])
         
-        iThreshold, newThreshold, tolerance = ic*(vThreshold/vc)**(1/n), 1e6, 0.01
+    #     iThreshold, newThreshold, tolerance = ic*(vThreshold/vc)**(1/n), 1e6, 0.01
         
-        counter = 1
-        while((counter < 5) and (np.abs(iThreshold-newThreshold) > tolerance)):
-            #print('iThreshold {:4.4e}'.format(iThreshold))
-            #print('counter = {} ic = {:4.4e}, n = {:4.4e}'.format(str(counter), ic, n))
-            iThreshold = newThreshold
-            voltage = removeBackground(current, voltage, ic, n, vThreshold, vc)
-            popt, pcov = curve_fit(powerLaw, current, voltage, p0=[ic, n])
-            ic, n = popt[0], popt[1]
-            newThreshold = ic*(vThreshold/vc)**(1/n)
-            counter+=1
+    #     counter = 1
+    #     while((counter < 5) and (np.abs(iThreshold-newThreshold) > tolerance)):
+    #         #print('iThreshold {:4.4e}'.format(iThreshold))
+    #         #print('counter = {} ic = {:4.4e}, n = {:4.4e}'.format(str(counter), ic, n))
+    #         iThreshold = newThreshold
+    #         voltage = removeBackground(current, voltage, ic, n, vThreshold, vc)
+    #         popt, pcov = curve_fit(powerLaw, current, voltage, p0=[ic, n])
+    #         ic, n = popt[0], popt[1]
+    #         newThreshold = ic*(vThreshold/vc)**(1/n)
+    #         counter+=1
         
-        if vb: print('afterLoop', iThreshold, newThreshold)
+    #     if vb: print('afterLoop', iThreshold, newThreshold)
         
-        if fitType == 'powerLaw':
-            popt, pcov = curve_fit(powerLaw, current, voltage, p0=[ic, n])
-            ic, n = popt[0], popt[1]
-        else:
-            log_current = np.log(current[voltage > vc])
-            log_voltage = np.log(voltage[voltage > vc])
+    #     if fitType == 'powerLaw':
+    #         popt, pcov = curve_fit(powerLaw, current, voltage, p0=[ic, n])
+    #         ic, n = popt[0], popt[1]
+    #     else:
+    #         log_current = np.log(current[voltage > vc])
+    #         log_voltage = np.log(voltage[voltage > vc])
             
-            valid = ~(np.isnan(log_current) | np.isnan(log_voltage))
-            popt, pcov = curve_fit(linear, log_current[valid], log_voltage[valid])
+    #         valid = ~(np.isnan(log_current) | np.isnan(log_voltage))
+    #         popt, pcov = curve_fit(linear, log_current[valid], log_voltage[valid])
             
-            n, ic = popt[0], vc**(1./popt[0]) / np.exp(popt[1]/popt[0])
+    #         n, ic = popt[0], vc**(1./popt[0]) / np.exp(popt[1]/popt[0])
             
-        if ((ic < 0) | (n < 1)):
-                ic = n = np.nan 
-        if vb: print(ic, n)
+    #     if ((ic < 0) | (n < 1)):
+    #             ic = n = np.nan 
+    #     if vb: print(ic, n)
         
-    except Exception as e: # Usually TypeError, IndexError
-        print('fittingFuntions:fitIV returned: ', e)
-        ic, n = np.nan, np.nan
+    # except Exception as e: # Usually TypeError, IndexError
+    #     print('fittingFuntions:fitIV returned: ', e)
+    #     ic, n = np.nan, np.nan
         
-    return ic, n, voltage
+    # return ic, n, voltage
+
+
+    # temporarily disable this function, Ben Clark
+    return 0, 0, 0
     
 def removeBackground(current, voltage, ic, n, noiseThreshold, vc, vb=False):
     if vb: print(ic, noiseThreshold, vc,n)

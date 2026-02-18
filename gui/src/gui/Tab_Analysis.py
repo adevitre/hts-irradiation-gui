@@ -100,7 +100,7 @@ class Tab_Analysis(QWidget):
 
             x = 0
             if self.qradiobutton_fluence.isChecked():
-                x = re.search('\d+(\.\d+)?[eE][-+]?\d+pm2', row.fpath)
+                x = re.search(r'\d+(\.\d+)?[eE][-+]?\d+pm2', row.fpath)
                 if x is not None:
                     x = float(x.group(0)[:-3])
                 else:
@@ -108,7 +108,7 @@ class Tab_Analysis(QWidget):
                     x = dialog.get_value() # returns -1 if the user is fed up with inputting the fluences manually and hits CANCEL
                     del dialog
             elif self.qradiobutton_flux.isChecked():
-                x = re.search('\d+nA', row.fpath)
+                x = re.search(r'\d+nA', row.fpath)
                 if x is not None:
                     x = float(x.group(0)[:-2])
                 else:

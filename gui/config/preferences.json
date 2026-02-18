@@ -4,7 +4,8 @@
   "datafileMaxSize": 50,
   "emails": [
     "dafisch@mit.edu",
-    "devitre@mit.edu"
+    "devitre@mit.edu",
+    "benclark@mit.edu"
   ],
   "iv_voltageThreshold": 20,
   "path_sequences": "/home/htsirradiation/Documents/sequences/",
@@ -13,7 +14,8 @@
   "sampling_period_pm": 3,
   "sampling_period_tc": 1,
   "saverate": 300,
-  "temporary_savefolder": "/home/htsirradiation/Documents/data/temp-folders/",
+  "temporary_savefolder": "C:/Users/benclark/Documents/data/temp-folders/",
+  "sampling_period_tm218": 1,
   "timeaxis_max": 3600,
   "timeaxis_step": 600,
   "tv_voltageThreshold": 1000,

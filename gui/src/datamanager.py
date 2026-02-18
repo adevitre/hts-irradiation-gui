@@ -216,11 +216,17 @@ class DataManager(QObject):
         try:
             cut = self.preferences['timeaxis_max']
             
-            tcData = self.tcData.loc[self.tcData.index[-int(np.ceil(2*self.preferences['sampling_period_tc'])+cut):]].copy(deep=True)    
+            # old version
+            # tcData = self.tcData.loc[self.tcData.index[-int(np.ceil(2*self.preferences['sampling_period_tc'])+cut):]].copy(deep=True)    
+            # modified version, Ben Clark
+            tcData = self.tcData.loc[self.tcData.index[-int(np.ceil(2*self.preferences['sampling_period_tm218'])+cut):]].copy(deep=True)    
             pmData = self.pmData.loc[self.pmData.index[-int(np.ceil(2*self.preferences['sampling_period_pm'])+cut):]].copy(deep=True)    
-            mcData = self.mcData.loc[self.mcData.index[-int(np.ceil(2*self.preferences['sampling_period_pm'])+cut):]].copy(deep=True)
+            # mcData = self.mcData.loc[self.mcData.index[-int(np.ceil(2*self.preferences['sampling_period_pm'])+cut):]].copy(deep=True)
 
-            self.plot_signal.emit(tcData.time_s.values, pmData.time_s.values, mcData.time_s.values, tcData.setpt_K.values, tcData.sampleT_K.values, tcData.targetT_K.values, tcData.holderT_K.values, tcData.spareT_K.values, pmData.pressure_torr.values, tcData.heaterPower_W.values, mcData.setpoint_field.values, mcData.field_T.values)
+            # print(tcData.time_s.values)
+            # self.plot_signal.emit(tcData.time_s.values, pmData.time_s.values, mcData.time_s.values, tcData.setpt_K.values, tcData.sampleT_K.values, tcData.targetT_K.values, tcData.holderT_K.values, tcData.spareT_K.values, pmData.pressure_torr.values, tcData.heaterPower_W.values, mcData.setpoint_field.values, mcData.field_T.values)
+            self.plot_signal.emit(tcData.time_s.values, pmData.time_s.values, np.array([0]), tcData.setpt_K.values, tcData.sampleT_K.values, tcData.targetT_K.values, tcData.holderT_K.values, tcData.spareT_K.values, pmData.pressure_torr.values, tcData.heaterPower_W.values, np.array([0]), np.array([0]))
+
         except AttributeError as e:
             print('DataManager:updateEnvironmentPlots returned: ', e)
             print(self.tcData)

@@ -1,5 +1,5 @@
 import os, time, datetime, numpy
-from playsound import playsound
+# from playsound import playsound
 from configure import load_json
 from scipy import integrate, constants
 from PyQt5.QtCore import pyqtSignal, QObject, QThreadPool, QTimer, QMutex
@@ -73,23 +73,37 @@ class TaskManager(QObject):
             self.dataBackupTimer.stop()
 
     def updateTcReadings(self):
+        # commented out, Ben Clark
+        # if not self.ln2Measurements:
+            # setpointT, sampleT, targetT, holderT, spareT, heatingPower = self.hm.getTemperatureReading()
+        # else:
+        #     setpointT, sampleT, targetT, holderT, spareT, heatingPower = 77.3, 77.3, 0, 0, 0, 0.
+        # self.dm.updateTcReadings(setpointT, sampleT, targetT, holderT, spareT, heatingPower)
+
+        # modified version, Ben Clark
         if not self.ln2Measurements:
-            setpointT, sampleT, targetT, holderT, spareT, heatingPower = self.hm.getTemperatureReading()
+            # temporary set things to zero for testing
+            sampleT, holderT = self.hm.getTemperatureReading()
+            setpointT, targetT, spareT, heatingPower = (0,0,0,0)
         else:
             setpointT, sampleT, targetT, holderT, spareT, heatingPower = 77.3, 77.3, 0, 0, 0, 0.
         self.dm.updateTcReadings(setpointT, sampleT, targetT, holderT, spareT, heatingPower)
-        
+
+
     def updatePmReadings(self, ln2Measurements=False):
         if not self.ln2Measurements:
-            pressure = self.hm.getPressureReading()
+            # pressure = self.hm.getPressureReading()
+            # temporary pressure value for testing, Ben Clark
+            pressure = 0
         else:
             pressure = 760.
         self.dm.updatePmReadings(pressure)
     
     def updateMcReadings(self):
-        setpoint_field = self.hm.get_setpoint_magnetic_field_reading()
-        field = self.hm.getMagneticFieldReading()
-        self.dm.updateMcReadings(setpoint_field, field)
+        # setpoint_field = self.hm.get_setpoint_magnetic_field_reading()
+        # field = self.hm.getMagneticFieldReading()
+        # self.dm.updateMcReadings(setpoint_field, field)
+        return
 
     def connectFourPointProbe(self, connected=True, current_source=HARDWARE_PARAMETERS['LABEL_LS121']):
         """
@@ -120,7 +134,9 @@ class TaskManager(QObject):
             self.hm.connectSampleTo100A(connected=connected)
 
         elif current_source == HARDWARE_PARAMETERS['LABEL_CAEN']:
-            self.useDMM, self.maxI = True, 100
+            # changed useDMM to false, Ben Clark
+            self.useDMM, self.maxI = False, 100
+            # self.useDMM, self.maxI = True, 100
             self.hm.setLargeCurrent(0.000, currentSource=current_source)
             self.hm.connectSampleTo6A(connected=not connected)
             self.hm.connectSampleTo100A(connected=connected)
@@ -247,7 +263,11 @@ class TaskManager(QObject):
                 
                 control_voltage = self.hm.setLargeCurrent(iRequest, currentSource=currentSource, vb=vb)
                 time.sleep(.3)
-                sampleT, targetT, holderT, spareT = self.dm.getLatestValue('Sample Temperature'), self.dm.getLatestValue('Target Temperature'), self.dm.getLatestValue('Holder Temperature'), self.dm.getLatestValue('Spare Temperature')
+                # temporarily disabling temperature recording, except for sample temperature, Ben Clark
+                # sampleT, targetT, holderT, spareT = self.dm.getLatestValue('Sample Temperature'), self.dm.getLatestValue('Target Temperature'), self.dm.getLatestValue('Holder Temperature'), self.dm.getLatestValue('Spare Temperature')
+                sampleT, targetT, spareT = numpy.nan, numpy.nan, numpy.nan
+                sampleT = self.dm.getLatestValue('Sample Temperature')
+                holderT = self.dm.getLatestValue('Holder Temperature')
                 v = self.hm.getVoltageReading()
                 i = self.hm.getCurrentReading(useDMM=self.useDMM)
                 self.datapoints.append([float(datetime.datetime.now().strftime('%Y%m%d%H%M%S.%f')), time.time()-self.dm.t0, i, v, sampleT, targetT, holderT, spareT])
@@ -486,15 +506,15 @@ class TaskManager(QObject):
                     else:
                         move_step_index_highlight = True
 
-                elif action == 'Play':
-                    if params[-1] == 'Whoop!':
-                        playsound('sounds/proud-fart-288263.mp3')
-                    elif params[-1] == 'Everybody remain calm! The reactor is melting!':
-                        playsound('sounds/proud-fart-288263.mp3')
-                    elif params[-1] == 'What about the neutrons?':
-                        playsound('sounds/proud-fart-288263.mp3')
-                    elif params[-1] == 'It s a trap!': 
-                        playsound('sounds/proud-fart-288263.mp3')
+                # elif action == 'Play':
+                #     if params[-1] == 'Whoop!':
+                #         playsound('sounds/proud-fart-288263.mp3')
+                #     elif params[-1] == 'Everybody remain calm! The reactor is melting!':
+                #         playsound('sounds/proud-fart-288263.mp3')
+                #     elif params[-1] == 'What about the neutrons?':
+                #         playsound('sounds/proud-fart-288263.mp3')
+                #     elif params[-1] == 'It s a trap!': 
+                #         playsound('sounds/proud-fart-288263.mp3')
                 else:
                     self.log_signal.emit('InvalidStep', 'Step {} in Sequence {} is not a valid action.'.format(i, 'SequenceName'))
                 

@@ -60,7 +60,7 @@ class Device:
         if vb: 
             print('DEBUG: The expected response is :', self.settings['response'])
             print('DEBUG: The received response is : ', response)
-        
+
         if (re.search(self.settings['response'], response)):
             self.connected = True
             if self.serialDevice:

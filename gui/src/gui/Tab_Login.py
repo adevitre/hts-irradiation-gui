@@ -25,7 +25,8 @@ class Tab_Login(QWidget):
     setvoltagesign_signal = pyqtSignal(int)
     signal_stopsession = pyqtSignal()
     
-    def __init__(self, parent=None, default_directory='/home/htsirradiation/Documents/data'):
+
+    def __init__(self, parent=None, default_directory='C:/Users/benclark/Documents/data'):
         
         super(Tab_Login, self).__init__(parent)
         self.parent = parent

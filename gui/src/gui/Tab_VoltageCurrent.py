@@ -65,7 +65,9 @@ class Tab_VoltageCurrent(QWidget):
         spb_font.setWeight(75)
         
         self.comboBoxSelectCurrentSource = QComboBox(self)
-        self.comboBoxSelectCurrentSource.addItems([HARDWARE_PARAMETERS['LABEL_CS006A'], HARDWARE_PARAMETERS['LABEL_CAEN'], HARDWARE_PARAMETERS['LABEL_CS100A'], HARDWARE_PARAMETERS['LABEL_TDK']]) # WARNING: Changing these labels will affect the functionality of Ic measurements!
+        # changed current source selector to only offer CAEN
+        # self.comboBoxSelectCurrentSource.addItems([HARDWARE_PARAMETERS['LABEL_CS006A'], HARDWARE_PARAMETERS['LABEL_CAEN'], HARDWARE_PARAMETERS['LABEL_CS100A'], HARDWARE_PARAMETERS['LABEL_TDK']]) # WARNING: Changing these labels will affect the functionality of Ic measurements!
+        self.comboBoxSelectCurrentSource.addItems([HARDWARE_PARAMETERS['LABEL_CAEN']]) # WARNING: Changing these labels will affect the functionality of Ic measurements!
         self.comboBoxSelectCurrentSource.activated.connect(self.comboBoxSelectCurrentSource_activated)
         self.comboBoxSelectCurrentSource.setEnabled(True)
 

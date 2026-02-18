@@ -33,7 +33,8 @@ class Sidebar(QWidget):
     chamberlight_signal = pyqtSignal(bool)
     targetlight_signal = pyqtSignal(bool)
     settemp_signal = pyqtSignal(float)
-    set_field_signal = pyqtSignal(float)
+    # commented out, Ben Clark
+    # set_field_signal = pyqtSignal(float)
     faradaycup_signal = pyqtSignal(bool)
     reset_signal = pyqtSignal()
 
@@ -58,7 +59,8 @@ class Sidebar(QWidget):
         self.labelHolderTemperature = QRadioButton(self)
         self.labelSpareTemperature = QRadioButton(self)
 
-        self.label_magnetic_field = QRadioButton(self) # This is the calculated central solenoid field based on the current through the windings
+        # commented out, Ben Clark
+        # self.label_magnetic_field = QRadioButton(self) # This is the calculated central solenoid field based on the current through the windings
         
         self.labelHeaterPower.setStyleSheet('color: black; font-size: 20px;')
         self.labelPressure.setStyleSheet('color: forestgreen; font-size: 20px;')
@@ -82,7 +84,8 @@ class Sidebar(QWidget):
         
         self.labelTargetTemperature.setChecked(True)
 
-        self.label_magnetic_field.setStyleSheet('QRadioButton {background-color: rgba(255, 255, 255, 0); color: magenta; font-size: 20px}')
+        # commented out, Ben Clark
+        # self.label_magnetic_field.setStyleSheet('QRadioButton {background-color: rgba(255, 255, 255, 0); color: magenta; font-size: 20px}')
         
         spb_font = QFont()
         spb_font.setPointSize(22)
@@ -105,23 +108,25 @@ class Sidebar(QWidget):
         self.pushButtonSetTemperature.setEnabled(False)
         self.pushButtonSetTemperature.setStyleSheet(self.styles['QPushButton_disable'])
 
-        # Set up the spinbox and button for manual magnetic field control
-        self.QDoubleSpinBox_setField = QDoubleSpinBox(self)
-        self.QDoubleSpinBox_setField.setDecimals(2)
-        self.QDoubleSpinBox_setField.setRange(0, 14)
-        self.QDoubleSpinBox_setField.setButtonSymbols(QDoubleSpinBox.NoButtons)
-        self.QDoubleSpinBox_setField.setAlignment(Qt.AlignCenter)
-        self.QDoubleSpinBox_setField.setFont(spb_font)
-        self.QDoubleSpinBox_setField.setEnabled(False)
+        # commented out, Ben Clark
+        # # Set up the spinbox and button for manual magnetic field control
+        # self.QDoubleSpinBox_setField = QDoubleSpinBox(self)
+        # self.QDoubleSpinBox_setField.setDecimals(2)
+        # self.QDoubleSpinBox_setField.setRange(0, 14)
+        # self.QDoubleSpinBox_setField.setButtonSymbols(QDoubleSpinBox.NoButtons)
+        # self.QDoubleSpinBox_setField.setAlignment(Qt.AlignCenter)
+        # self.QDoubleSpinBox_setField.setFont(spb_font)
+        # self.QDoubleSpinBox_setField.setEnabled(False)
 
-        self.pushButton_setField = QPushButton("Set magnetic field")
-        self.pushButton_setField.clicked.connect(lambda: self.set_field_signal.emit(self.QDoubleSpinBox_setField.value()))
-        self.pushButton_setField.setStyleSheet(self.styles['QPushButton_simulation'])
-        self.pushButton_setField.setShortcut('Ctrl+Shift+Return')
-        self.pushButton_setField.setEnabled(False)
-        self.pushButton_setField.setStyleSheet(self.styles['QPushButton_disable'])
+        # self.pushButton_setField = QPushButton("Set magnetic field")
+        # self.pushButton_setField.clicked.connect(lambda: self.set_field_signal.emit(self.QDoubleSpinBox_setField.value()))
+        # self.pushButton_setField.setStyleSheet(self.styles['QPushButton_simulation'])
+        # self.pushButton_setField.setShortcut('Ctrl+Shift+Return')
+        # self.pushButton_setField.setEnabled(False)
+        # self.pushButton_setField.setStyleSheet(self.styles['QPushButton_disable'])
         
         icon_side_length = 90
+
         # Set up the controls for Farday cup actuation
         self.pushButtonFaradayCup = QPushButton()
         self.pushButtonFaradayCup.clicked.connect(self.pushButtonFaradayCup_clicked)
@@ -177,13 +182,13 @@ class Sidebar(QWidget):
         verticalLayoutSideBar.addWidget(self.labelSpareTemperature)
         verticalLayoutSideBar.addWidget(self.labelHeaterPower)
         
-        # HBox layout for magnetic field control
-        verticalLayoutSideBar.addWidget(HorizontalLine())
-        horizontalLayout = QHBoxLayout()
-        horizontalLayout.addWidget(self.QDoubleSpinBox_setField)
-        horizontalLayout.addWidget(self.pushButton_setField)
-        verticalLayoutSideBar.addLayout(horizontalLayout)
-        verticalLayoutSideBar.addWidget(self.label_magnetic_field)
+        # # HBox layout for magnetic field control
+        # verticalLayoutSideBar.addWidget(HorizontalLine())
+        # horizontalLayout = QHBoxLayout()
+        # horizontalLayout.addWidget(self.QDoubleSpinBox_setField)
+        # horizontalLayout.addWidget(self.pushButton_setField)
+        # verticalLayoutSideBar.addLayout(horizontalLayout)
+        # verticalLayoutSideBar.addWidget(self.label_magnetic_field)
 
         # Set upthe turbo valve switch and pressure sensor controls
         verticalLayoutSideBar.addWidget(HorizontalLine())
@@ -216,17 +221,17 @@ class Sidebar(QWidget):
             if self.QDoubleSpinBox_setTemperature.hasFocus():
                 self.settemp_signal.emit(self.QDoubleSpinBox_setTemperature.value())
                 self.QDoubleSpinBox_setTemperature.clearFocus()
-            elif self.QDoubleSpinBox_setField.hasFocus():
-                self.set_field_signal.emit(self.QDoubleSpinBox_setField.value())
-                self.QDoubleSpinBox_setField.clearFocus()
+            # elif self.QDoubleSpinBox_setField.hasFocus():
+            #     self.set_field_signal.emit(self.QDoubleSpinBox_setField.value())
+            #     self.QDoubleSpinBox_setField.clearFocus()
 
     def updateSetpointDisplay(self, value):
         if not self.QDoubleSpinBox_setTemperature.hasFocus():
             self.QDoubleSpinBox_setTemperature.setValue(value)       
     
-    def updateSetpointDisplay(self, value):
-        if not self.QDoubleSpinBox_setField.hasFocus():
-            self.QDoubleSpinBox_setField.setValue(value) 
+    # def updateSetpointDisplay(self, value):
+    #     if not self.QDoubleSpinBox_setField.hasFocus():
+    #         self.QDoubleSpinBox_setField.setValue(value) 
 
     def qShortcut_setTemperature_triggered(self):
         self.QDoubleSpinBox_setTemperature.setFocus()
@@ -345,21 +350,19 @@ class Sidebar(QWidget):
         self.labelSpareTemperature.setText('{: <30}\t{: >20.2f}{: >5}'.format('Spare temperature:', values[4], 'K'))
         self.labelHeaterPower.setText('{: <33}\t{: >20.2f}{: >7}'.format('   Heating power:', values[5], 'W')) # Leave three whitespaces to align with label rather than radio buttons
         self.labelPressure.setText('{: <30}\t{: >20.2e}\t{: >5}'.format('Pressure:', values[6], 'torr'))
-        self.label_magnetic_field.setText('{: <30}\t{: >20.2f}{: >10}'.format('Magnetic Field:', values[8], 'T'))
-        if not self.QDoubleSpinBox_setField.hasFocus():
-            self.QDoubleSpinBox_setField.setValue(values[7])
-            print('The field values that will be written to the spinbox is: ', values[7])
+        # self.label_magnetic_field.setText('{: <30}\t{: >20.2f}{: >10}'.format('Magnetic Field:', values[8], 'T'))
+        # if not self.QDoubleSpinBox_setField.hasFocus():
+        #     self.QDoubleSpinBox_setField.setValue(values[7])
+        #     print('The field values that will be written to the spinbox is: ', values[7])
         QApplication.processEvents()
         
     def enable(self, enabled=True):
         self.pushButtonSetTemperature.setStyleSheet(self.styles['QPushButton_simulation'])
-        self.pushButton_setField.setStyleSheet(self.styles['QPushButton_simulation'])
+        # self.pushButton_setField.setStyleSheet(self.styles['QPushButton_simulation'])
         self.pushButtonSetTemperature.setEnabled(enabled)
-        self.pushButton_setField.setEnabled(enabled)
+        # self.pushButton_setField.setEnabled(enabled)
         self.QDoubleSpinBox_setTemperature.setEnabled(enabled)
-        self.QDoubleSpinBox_setField.setEnabled(enabled)
+        # self.QDoubleSpinBox_setField.setEnabled(enabled)
         self.pushButtonChamberLight.setEnabled(enabled)
         self.pushButtonTargetLight.setEnabled(enabled)
         self.pushButtonWarmup.setEnabled(True)
-
-        

@@ -118,7 +118,7 @@ class AddTcStepWindow(QWidget):
             desc = self.QLineEdit_description.text()
         except Exception as e:
             print(e)
-        regex = re.compile('[@ !#$%^&*()<>?/\|}{~:]')
+        regex = re.compile(r'[@ !#$%^&*()<>?/\|}{~:]')
         if(regex.search(desc) == None) and desc != "":
             self.ok_signal.emit('MeasureTc : Label = {} ; Start-Temperature = {} K; Stop-Temperature = {} K; Ramp-rate {} K/min; Transport-current = {} mA'.format(desc, self.QDoubleSpinBox_startT.value(), self.QDoubleSpinBox_stopT.value(),self.QDoubleSpinBox_ramp.value(), self.QComboBox_Current.currentText()))
             self.close()

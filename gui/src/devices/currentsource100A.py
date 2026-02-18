@@ -1,6 +1,7 @@
 import numpy, time, os
 from configure import load_json
-from uldaq import get_daq_device_inventory, DaqDevice, InterfaceType, AOutFlag
+# commented out uldaq import, not needed? 
+# from uldaq import get_daq_device_inventory, DaqDevice, InterfaceType, AOutFlag
 
 hwparams = load_json(fname='hwparams.json', location=os.getcwd()+'/config')
 
