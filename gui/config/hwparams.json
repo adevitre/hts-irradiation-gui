@@ -213,6 +213,16 @@
       "manual": "C:/Users/benclark/Documents/hts-irradiation-gui/manuals/Programming_Guide_USB_IF-AB-XX_de_en/Programming_ModBus_SCPI_REV24_EN.pdf",
       "description": "1500 W power supply we will use to power cartridge heaters for temperature control."
 
+    },
+    "relay_controller": {
+      "ethernet_port": 23,
+      "ip": "192.168.0.3",
+      "ending": "\r\n",
+      "greeting": "ver",
+      "name": "Relay controller",
+      "response": "A0M03.01",
+      "manual": "https://numato.com/docs/8-channel-ethernet-solid-state-relay-module/",
+      "description": "Numato 8 Channel Ethernet Solid State Relay Module"
     }
   },
   "ports": [

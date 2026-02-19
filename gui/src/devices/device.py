@@ -6,7 +6,7 @@ from PyQt5.QtCore import QMutex
     A generic class for reading data and sending commands with hardware devices.
     
     @author Alexis Devitre
-    @lastModified 05/02/2024
+    @lastModified 2/19/2026
 '''
 class Device:
     '''
@@ -136,6 +136,11 @@ class Device:
         self.ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)     # TCP
         self.ser.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.ser.connect((self.settings['ip'], self.settings['ethernet_port']))
+
+        # put a listen statement for relay controller to spit out welcome statement
+        # needed for relay controller, can't have for other ethernet devices, Ben Clark
+        if self.settings['name'] == "Relay controller":
+            self.ser.recv(128)
     
     def closeSocket(self):
         self.ser.close()

@@ -1,5 +1,8 @@
 import serial, time
 
+# this is the old relay programming class
+# new relay controller is found in relay_controller.py
+
 RELAYBOARD_ADDR_100A_SAMPLE = 0   # checked 14/03/2023
 RELAYBOARD_ADDR_100mA_SAMPLE = 1  # checked 14/03/2023
 RELAYBOARD_ADDR_6A_SAMPLE = 2     # not checked

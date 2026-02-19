@@ -11,6 +11,7 @@ from temperature_monitor import TemperatureMonitor
 from heater_supply import HeaterSupply
 from currentsourceCAEN import CurrentSourceCAEN
 from currentsource100A import CurrentSource100A
+from relay_controller import RelayController
 
 # from dmm6500 import DMM6500
 # from cs_tdk import CurrentSourceTDK
@@ -66,6 +67,7 @@ class HardwareManager(QObject):
         # added, Ben Clark
         self.tm218 = TemperatureMonitor()
         self.hs = HeaterSupply()
+        self.rc = RelayController(serialDevice=False, vb=vb)
 
     def initializeHardware(self):
         # self.relays.connectCurrentSource100mATo(device='hallSensor') # connect current source
