@@ -21,7 +21,7 @@ HARDWARE_PARAMETERS = load_json(fname='hwparams.json', location=os.getcwd()+'/co
 '''
 class Tab_VoltageCurrent(QWidget):
     
-    measure_signal = pyqtSignal(float, float, float, str, bool, str)
+    measure_signal = pyqtSignal(float, float, float, str, bool, str, int)
     updatePlot_signal = pyqtSignal()
     log_signal = pyqtSignal(str, str)
     
@@ -52,12 +52,14 @@ class Tab_VoltageCurrent(QWidget):
         self.QLabel_currentSource = QLabel(self)
         self.QLabel_nMeasurements = QLabel(self)
         self.QLabel_waitTime = QLabel(self)
+        self.QLabel_channel = QLabel(self)
         self.QLabel_rampStart.setText('Ramp start [A]')
         self.QLabel_stepSize.setText('Step size [A]')
         self.QLabel_threshold.setText('Voltage limit [uV]')
         self.QLabel_nMeasurements.setText('Repeat measurement')
         self.QLabel_waitTime.setText('Wait before next IV [s]')
         self.QLabel_currentSource.setText('Select current source')
+        self.QLabel_channel.setText('Select sample with relays')
 
         spb_font = QFont()
         spb_font.setPointSize(22)
@@ -70,6 +72,11 @@ class Tab_VoltageCurrent(QWidget):
         self.comboBoxSelectCurrentSource.addItems([HARDWARE_PARAMETERS['LABEL_CAEN']]) # WARNING: Changing these labels will affect the functionality of Ic measurements!
         self.comboBoxSelectCurrentSource.activated.connect(self.comboBoxSelectCurrentSource_activated)
         self.comboBoxSelectCurrentSource.setEnabled(True)
+
+        # create combo box for selecting sample 'channel' with relay actuation (multiple samples)
+        self.comboBoxSelectChannel = QComboBox(self)
+        self.comboBoxSelectChannel.addItems(HARDWARE_PARAMETERS["channel_labels"])
+
 
         self.QSpinBox_nMeasurements = QSpinBox(self)
         self.QSpinBox_nMeasurements.setRange(0, 20)
@@ -124,6 +131,9 @@ class Tab_VoltageCurrent(QWidget):
 
         verticalLayout = QVBoxLayout()
         verticalLayout.addStretch()
+        verticalLayout.addWidget(self.QLabel_channel)
+        verticalLayout.addWidget(self.comboBoxSelectChannel)
+        verticalLayout.addWidget(QLabel(" "))
         verticalLayout.addWidget(self.QLabel_currentSource)
         verticalLayout.addWidget(self.comboBoxSelectCurrentSource)
         verticalLayout.addWidget(QLabel(" "))
@@ -159,11 +169,23 @@ class Tab_VoltageCurrent(QWidget):
                     self.lastLabel = tag
                     tag = self.sessionTag + tag # done afterwards to avoid accumulating sessionTag in lastLabel
                     self.enableDataAcquisition(enabled=True, tag=tag)
-                    self.measure_signal.emit(self.QSpinBox_rampStart.value(), self.QDoubleSpinBox_stepSize.value(), self.QDoubleSpinBox_threshold.value()*1e-6, self.comboBoxSelectCurrentSource.currentText(), False, tag)
+                    self.measure_signal.emit(self.QSpinBox_rampStart.value(), 
+                                             self.QDoubleSpinBox_stepSize.value(), 
+                                             self.QDoubleSpinBox_threshold.value()*1e-6, 
+                                             self.comboBoxSelectCurrentSource.currentText(), 
+                                             False, 
+                                             tag,
+                                             self.comboBoxSelectChannel.currentIndex())
                 else:
                     QMessageBox.warning(self, 'Warning: invalid tag \"{}\"'.format(tag), 'Use only alphanumeric characters.')
         else:
-            self.measure_signal.emit(self.QSpinBox_rampStart.value(), self.QDoubleSpinBox_stepSize.value(), self.QDoubleSpinBox_threshold.value()*1e-6, self.comboBoxSelectCurrentSource.currentText(), True, 'stop')
+            self.measure_signal.emit(self.QSpinBox_rampStart.value(), 
+                                     self.QDoubleSpinBox_stepSize.value(), 
+                                     self.QDoubleSpinBox_threshold.value()*1e-6, 
+                                     self.comboBoxSelectCurrentSource.currentText(), 
+                                     True, 
+                                     'stop',
+                                     self.comboBoxSelectChannel.currentIndex())
             self.enableDataAcquisition(enabled=False)
     
     def comboBoxSelectCurrentSource_activated(self):

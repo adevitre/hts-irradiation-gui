@@ -284,10 +284,11 @@ class GUIManager(QMainWindow):
     def insertFaradayCup(self, inserted, logEvent=True):
         self.hm.insertFaradayCup(inserted=inserted, logEvent=logEvent)
      
-    @pyqtSlot(float, float, float, str, bool, str)
-    def measureIc(self, rampStart, iStep, maxV, currentSource, acquiring, tag):
+    @pyqtSlot(float, float, float, str, bool, str, int)
+    def measureIc(self, rampStart, iStep, maxV, currentSource, acquiring, tag, channel):
+        # channel (int) tells what sample you've selected with relays
         if not acquiring:
-            self.threadpool.start(Task(self.tm.measureIc, rampStart=rampStart, iStep=iStep, maxV=maxV, currentSource=currentSource, tag=tag))
+            self.threadpool.start(Task(self.tm.measureIc, rampStart=rampStart, iStep=iStep, maxV=maxV, currentSource=currentSource, tag=tag, channel=channel))
         else:
             self.tm.stopAcquiring()
     

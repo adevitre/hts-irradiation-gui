@@ -79,7 +79,8 @@ class DataManager(QObject):
         if folderName in os.listdir(newDirectory):
             comment = 'Continued after GUI restart'
         else:
-            folderName = str(datetime.datetime.now()).replace(' ', '_')+'_'+folderName # timestamp makes savedirectory unique
+            # adding replacement of : with - because windows does not allow : in file path, Ben Clark
+            folderName = str(datetime.datetime.now()).replace(' ', '_').replace(':', '-')+'_'+folderName # timestamp makes savedirectory unique
             shutil.move(self.save_directory, newDirectory+'/'+folderName)
             comment = 'New session started'
 

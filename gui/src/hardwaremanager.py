@@ -79,6 +79,9 @@ class HardwareManager(QObject):
         if self.tc is not None:
             self.tc.rampTemperature(rate=2., ramping=False)
             self.tc.__del__()
+
+        if self.rc is not None:
+            self.rc.__del__()
     
     def getPIDSensor(self):    
         return self.tc.getPIDSensor()
@@ -233,6 +236,13 @@ class HardwareManager(QObject):
         # self.relays.connectSampleTo100A(connected)
         return
     
+    def set_channel(self, channel):
+        # set_channel connects the relay corresponding to the sample you want to measure
+        self.rc.set_relay_states(channel)
+    
+    def disconnect_relays(self):
+        self.rc.all_off()
+
     def enableCurrentSource100mA(self, enabled=True):
         # commented out, Ben Clark
         # self.cs100mA.enable(enabled)

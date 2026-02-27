@@ -4,6 +4,7 @@
   "LABEL_CS100A": "HP6260B-120A",
   "LABEL_LS121": "LS121",
   "LABEL_TDK": "TDK-lambda GEN6-100",
+  "channel_labels": ["Channel 0", "Channel 1", "Channel 2", "Channel 3"],
   "a": 0.19821459431856062,
   "b": -0.015305039824043774,
   "bridgeLength": 2,

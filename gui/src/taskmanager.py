@@ -105,7 +105,7 @@ class TaskManager(QObject):
         # self.dm.updateMcReadings(setpoint_field, field)
         return
 
-    def connectFourPointProbe(self, connected=True, current_source=HARDWARE_PARAMETERS['LABEL_LS121']):
+    def connectFourPointProbe(self, connected=True, current_source=HARDWARE_PARAMETERS['LABEL_LS121'], channel=0):
         """
             connectFourPointProbe connects or disconnects the transport measurement system for Ic, Tc, and Vt measurements.
             It also resets the Quench Protection System (QPS) everytime the measurement starts.
@@ -140,6 +140,12 @@ class TaskManager(QObject):
             self.hm.setLargeCurrent(0.000, currentSource=current_source)
             self.hm.connectSampleTo6A(connected=not connected)
             self.hm.connectSampleTo100A(connected=connected)
+
+            # set_channel connects the relay corresponding to the sample you want to measure
+            if connected: 
+                self.hm.set_channel(channel)
+            else:
+                self.hm.disconnect_relays()
 
         elif current_source == HARDWARE_PARAMETERS['LABEL_TDK']:
             self.useDMM, self.maxI = True, 100
@@ -233,7 +239,7 @@ class TaskManager(QObject):
             self.log_signal.emit('Tc', 'Tc = {:4.2f} K, {}'.format(tc, tag))
 
 
-    def measureIc(self, rampStart=0, iStep=0.1, maxV=1e-5, currentSource=HARDWARE_PARAMETERS['LABEL_CS100A'], tag='Pristine', vb=True):
+    def measureIc(self, rampStart=0, iStep=0.1, maxV=1e-5, currentSource=HARDWARE_PARAMETERS['LABEL_CS100A'], tag='Pristine', channel=0, vb=True):
         '''
             Performs Ic measurement. Requests fitting and data output from datamanager object,
             then plotting and logging from LIFT1_GUI object.
@@ -245,7 +251,7 @@ class TaskManager(QObject):
             tag       - (string) Data file label
             vb        - (bool) Verbose enables printouts for debugging
         '''
-        self.connectFourPointProbe(connected=True, current_source=currentSource)
+        self.connectFourPointProbe(connected=True, current_source=currentSource, channel=channel)
         
         try:
             self.datapoints, self.acquiring = [], True
