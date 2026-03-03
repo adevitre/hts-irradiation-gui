@@ -326,7 +326,8 @@ class HardwareManager(QObject):
     def resetQPS(self):
         # commented out, Ben Clark
         # self.relays.resetQPS()
-        return
+        # new version
+        self.rc.reset_qps()
 
     def reconnect_device(self, device_key):
         '''

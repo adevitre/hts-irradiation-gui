@@ -1,4 +1,5 @@
 from device import Device
+import time
 # import numpy as np
 # import re
 
@@ -43,5 +44,10 @@ class RelayController(Device):
     
     def all_off(self):
         self.write("reset") # turns off all relays
+
+    def reset_qps(self):
+        self.write("relay on 4")
+        time.sleep(0.5)
+        self.write("relay off 4")
 
     
