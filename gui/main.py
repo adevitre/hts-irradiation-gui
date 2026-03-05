@@ -29,5 +29,3 @@ ui.show()                       	# show the GUI
 app.exec_()			     			# start the event loop
 eliminateTempFiles(os.getcwd()) 	# Remove python cache files
 sys.exit()                      	# End program
-
-# test

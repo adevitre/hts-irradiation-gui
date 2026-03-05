@@ -3,6 +3,9 @@ import numpy as np
 from pyqtgraph import PlotWidget, mkPen, InfiniteLine, TextItem
 from PyQt5.QtWidgets import QWidget
 from fittingFunctions import linear, powerLaw
+from PyQt5.QtCore import QTimer
+
+import time
 
 class MeasurePlot(PlotWidget):
     """
@@ -31,10 +34,45 @@ class MeasurePlot(PlotWidget):
 
         self.lines = []
         self.activeLine = None
+
+        # fixed plot freezing issue via chatgpt suggestion
+        # buffer for throttled updates
+        self._x_buffer = []
+        self._y_buffer = []
+
+        # timer to periodically update the plot
+        self._update_timer = QTimer()
+        self._update_timer.setInterval(100)  # 100 ms, same as your current plot timer
+        self._update_timer.timeout.connect(self._flush_buffer)
+        self._update_timer.start()
         
+    # comment out old version
+    # def updateActiveLine(self, x, y):
+    #     self.activeLine.setData(x, y)
+
+    # fixed plot freezing issue via chatgpt suggestion
     def updateActiveLine(self, x, y):
-        self.activeLine.setData(x, y)
+        # append to buffer
+        self._x_buffer.append(x)
+        self._y_buffer.append(y)
+
+    # fixed plot freezing issue via chatgpt suggestion
+    def _flush_buffer(self):
+        if not self._x_buffer:
+            return
+
+        # merge all buffered points
+        x_all = np.concatenate(self._x_buffer)
+        y_all = np.concatenate(self._y_buffer)
+
+        # set data once per timer tick
+        self.activeLine.setData(x_all, y_all)
+
+        # clear the buffers
+        self._x_buffer = []
+        self._y_buffer = []
         
+
     def addCurve(self, **kwargs):
         self.activeLine = self.plot([], [], **kwargs)
         self.lines = np.append(self.lines, self.activeLine)
@@ -61,7 +99,13 @@ class MeasurePlot(PlotWidget):
         '''
             Clears the plots
         '''
-        self.clear()
+        # old version
+        # self.clear()
+        # del self.lines
+        # self.lines = []
+
+        # chatgpt says this is the fix to a bug
+        super().clear()
         del self.lines
         self.lines = []
     
